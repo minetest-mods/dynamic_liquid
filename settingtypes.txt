@@ -1,0 +1,18 @@
+#Makes water limited (it doesn't spawn new blocks any more) and causes it to flow dynamically
+dynamic_liquid_water (Dynamic water) bool true
+
+#Causes river water to flow dynamically
+dynamic_liquid_river_water (Dynamic river water) bool true
+
+#Causes lava to flow dynamically
+dynamic_liquid_lava (Dynamic lava) bool true
+
+#Sets the probability of the lava flow calculation per block per second.
+#That is, if this is set to 5 then there's a 1/5 chance per second that a lava block
+#will check if it should move. Increase this value to make lava flow slower. Set it to
+#1 to make lava flow as fast as water does.
+#This value only has an effect if dynamic lava is set to true
+dynamic_liquid_lava_flow_propability (Lava flow probability) int 5 1 100
+
+#Causes natural clay deposits to act as spring sources, seeping water into the block above them
+dynamic_liquid_springs (Clay springs) bool true

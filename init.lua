@@ -93,6 +93,7 @@ if springs then
 	local c_clay = minetest.get_content_id("default:clay")
 	local c_spring_clay = minetest.get_content_id("dynamic_liquid:clay")
 	
+	-- Turn mapgen clay into spring clay
 	minetest.register_on_generated(function(minp, maxp, seed)
 		if minp.y >= 0 or maxp.y <= -15 then
 			return
@@ -111,15 +112,20 @@ if springs then
 	
 	minetest.register_abm({
 		nodenames = {"dynamic_liquid:clay"},
-		neighbors = {"air"},
+		neighbors = {"air", "default:water_source", "default:water_flowing"},
 		interval = 1,
 		chance = 1,
 		catch_up = false,
 		action = function(pos,node)
-			local check_pos = {x=pos.x, y=pos.y+1, z=pos.z}
-			local check_node = minetest.get_node(check_pos)
-			if check_node.name == "air" or check_node.name == "default:water_flowing" then
-				minetest.set_node(check_pos, {name="default:water_source"})
+			while pos.y <= 0 do -- TODO: find mapgen water level for this check
+				pos.y = pos.y + 1
+				local check_node = minetest.get_node(pos)
+				if check_node.name == "air" or check_node.name == "default:water_flowing" then
+					minetest.set_node(pos, {name="default:water_source"})
+				elseif check_node.name ~= "default:water_source" then
+					--Something's been put on top of this clay, don't send water through it
+					break
+				end
 			end
 		end
 	})

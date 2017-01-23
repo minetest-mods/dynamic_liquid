@@ -120,7 +120,6 @@ if springs then
 			local check_node = minetest.get_node(check_pos)
 			if check_node.name == "air" or check_node.name == "default:water_flowing" then
 				minetest.set_node(check_pos, {name="default:water_source"})
-				minetest.debug("generated spring water")
 			end
 		end
 	})

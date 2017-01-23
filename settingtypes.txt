@@ -14,5 +14,5 @@ dynamic_liquid_lava (Dynamic lava) bool true
 #This value only has an effect if dynamic lava is set to true
 dynamic_liquid_lava_flow_propability (Lava flow probability) int 5 1 100
 
-#Causes natural clay deposits to act as spring sources, seeping water into the block above them
+#Causes natural clay deposits to act as water sources, seeping water into the block above them
 dynamic_liquid_springs (Clay springs) bool true

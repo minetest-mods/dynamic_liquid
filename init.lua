@@ -120,6 +120,9 @@ end
 -- spring clay to turn into unknown nodes.
 local clay_def = duplicate_def("default:clay")
 clay_def.description = "Damp Clay"
+if not springs then
+	clay_def.groups.not_in_creative_inventory = 1 -- take it out of creative inventory though
+end
 minetest.register_node("dynamic_liquid:clay", clay_def)
 
 if springs then	
@@ -165,4 +168,33 @@ if springs then
 			end
 		end
 	})
+	
+	-- This is a creative-mode only node that produces a modest amount of water continuously no matter where it is.
+	-- Allow this one to turn into "unknown node" when this feature is disabled, since players had to explicitly place it.
+	minetest.register_node("dynamic_liquid:spring", {
+	description = "Spring",
+	drops = "default:gravel",
+	tiles = {"default_cobble.png^[combine:16x80:0,-48=crack_anylength.png",
+		"default_cobble.png","default_cobble.png","default_cobble.png","default_cobble.png","default_cobble.png",
+		},
+	is_ground_content = false,
+	groups = {cracky = 3, stone = 2},
+	sounds = default.node_sound_gravel_defaults(),
+	})
+	
+	minetest.register_abm({
+		nodenames = {"dynamic_liquid:spring"},
+		neighbors = {"air", "default:water_flowing"},
+		interval = 1,
+		chance = 1,
+		catch_up = false,
+		action = function(pos,node)
+			pos.y = pos.y + 1
+			check_node = get_node(pos)
+			check_node_name = check_node.name
+			if check_node_name == "air" or check_node_name == "default:water_flowing" then
+				set_node(pos, {name="default:water_source"})
+			end
+		end
+	})	
 end

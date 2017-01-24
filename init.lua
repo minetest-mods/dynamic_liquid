@@ -36,17 +36,42 @@ if water then
 	minetest.register_node(":default:water_flowing", new_water_flowing_def)
 end
 
-local rand_dir = function()
-	local dirs= {
- 	{x=0,y=0,z=1},
-	{x=0,y=0,z=-1},
-	{x=1,y=0,z=0},
-	{x=-1,y=0,z=0},
-	}
-	return dirs[math.random(4)]
-end
+-- By making this giant table of all possible permutations of horizontal direction we can avoid
+-- lots of redundant calculations.
+local all_direction_permutations = {
+	{{x=0,z=1},{x=0,z=-1},{x=1,z=0},{x=-1,z=0}},
+	{{x=0,z=1},{x=0,z=-1},{x=-1,z=0},{x=1,z=0}},
+	{{x=0,z=1},{x=1,z=0},{x=0,z=-1},{x=-1,z=0}},
+	{{x=0,z=1},{x=1,z=0},{x=-1,z=0},{x=0,z=-1}},
+	{{x=0,z=1},{x=-1,z=0},{x=0,z=-1},{x=1,z=0}},
+	{{x=0,z=1},{x=-1,z=0},{x=1,z=0},{x=0,z=-1}},
+	{{x=0,z=-1},{x=0,z=1},{x=-1,z=0},{x=1,z=0}},
+	{{x=0,z=-1},{x=0,z=1},{x=1,z=0},{x=-1,z=0}},
+	{{x=0,z=-1},{x=1,z=0},{x=-1,z=0},{x=0,z=1}},
+	{{x=0,z=-1},{x=1,z=0},{x=0,z=1},{x=-1,z=0}},
+	{{x=0,z=-1},{x=-1,z=0},{x=1,z=0},{x=0,z=1}},
+	{{x=0,z=-1},{x=-1,z=0},{x=0,z=1},{x=1,z=0}},
+	{{x=1,z=0},{x=0,z=1},{x=0,z=-1},{x=-1,z=0}},
+	{{x=1,z=0},{x=0,z=1},{x=-1,z=0},{x=0,z=-1}},
+	{{x=1,z=0},{x=0,z=-1},{x=0,z=1},{x=-1,z=0}},
+	{{x=1,z=0},{x=0,z=-1},{x=-1,z=0},{x=0,z=1}},
+	{{x=1,z=0},{x=-1,z=0},{x=0,z=1},{x=0,z=-1}},
+	{{x=1,z=0},{x=-1,z=0},{x=0,z=-1},{x=0,z=1}},
+	{{x=-1,z=0},{x=0,z=1},{x=1,z=0},{x=0,z=-1}},
+	{{x=-1,z=0},{x=0,z=1},{x=0,z=-1},{x=1,z=0}},
+	{{x=-1,z=0},{x=0,z=-1},{x=1,z=0},{x=0,z=1}},
+	{{x=-1,z=0},{x=0,z=-1},{x=0,z=1},{x=1,z=0}},
+	{{x=-1,z=0},{x=1,z=0},{x=0,z=-1},{x=0,z=1}},
+	{{x=-1,z=0},{x=1,z=0},{x=0,z=1},{x=0,z=-1}},
+}
 
-local down = {x=0,y=-1,z=0}
+-- This method saves us one arithmetic operation over the standard vector.add
+-- and doesn't allocate a new table for the output
+local horiz_add = function(pos, dir, out)
+	out.x=pos.x + dir.x
+	out.y=pos.y
+	out.z=pos.z + dir.z
+end
 
 local liquid_abm = function(liquid, flowing_liquid, chance)
 	minetest.register_abm({
@@ -56,18 +81,22 @@ local liquid_abm = function(liquid, flowing_liquid, chance)
 		chance = chance or 1,
 		catch_up = false,
 		action = function(pos,node)
-			local check_pos = vector.add(pos, down)
+			local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
 			local check_node = minetest.get_node(check_pos)
 			if check_node.name == flowing_liquid then
 				minetest.set_node(pos, check_node)
 				minetest.set_node(check_pos, node)
 				return
 			end
-			check_pos = vector.add(pos, rand_dir())
-			check_node = minetest.get_node(check_pos)
-			if check_node.name == flowing_liquid then
-				minetest.set_node(pos, check_node)
-				minetest.set_node(check_pos, node)
+			perm = all_direction_permutations[math.random(24)]
+			for i=1,4 do
+				horiz_add(pos, perm[i], check_pos)
+				check_node = minetest.get_node(check_pos)
+				if check_node.name == flowing_liquid then
+					minetest.set_node(pos, check_node)
+					minetest.set_node(check_pos, node)
+					break
+				end
 			end
 		end
 	})
@@ -77,10 +106,10 @@ if lava then
 	liquid_abm("default:lava_source", "default:lava_flowing", lava_probability)
 end
 if water then
-	liquid_abm("default:water_source", "default:water_flowing", nil)
+	liquid_abm("default:water_source", "default:water_flowing", 1)
 end
 if river_water then	
-	liquid_abm("default:river_water_source", "default:river_water_flowing", nil)
+	liquid_abm("default:river_water_source", "default:river_water_flowing", 1)
 end
 
 -- register damp clay whether we're going to set the ABM or not, if the user disables this feature we don't want existing

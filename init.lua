@@ -66,14 +66,6 @@ local all_direction_permutations = {
 	{{x=-1,z=0},{x=1,z=0},{x=0,z=1},{x=0,z=-1}},
 }
 
--- This method saves us one arithmetic operation over the standard vector.add
--- and doesn't allocate a new table for the output
-local horiz_add = function(pos, dir, out)
-	out.x=pos.x + dir.x
-	out.y=pos.y
-	out.z=pos.z + dir.z
-end
-
 -- This is getting a bit silly, but hopefully every bit of optimization counts.
 -- By recording local pointers to the get and set methods we avoid a couple of
 -- table lookups in each ABM call.
@@ -87,7 +79,7 @@ local liquid_abm = function(liquid, flowing_liquid, chance)
 		interval = 1,
 		chance = chance or 1,
 		catch_up = false,
-		action = function(pos,node)
+		action = function(pos,node) -- Do *everything* possible to optimize this method
 			local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
 			local check_node = get_node(check_pos)
 			if check_node.name == flowing_liquid then
@@ -96,13 +88,18 @@ local liquid_abm = function(liquid, flowing_liquid, chance)
 				return
 			end
 			perm = all_direction_permutations[math.random(24)]
+			local dirs -- declare outside of loop so it won't keep entering/exiting scope
 			for i=1,4 do
-				horiz_add(pos, perm[i], check_pos) -- reuse check_pos to avoid allocating a new table
+				dirs = perm[i]
+				-- reuse check_pos to avoid allocating a new table
+				check_pos.x = pos.x + dirs.x 
+				check_pos.y = pos.y
+				check_pos.z = pos.z + dirs.z
 				check_node = get_node(check_pos)
 				if check_node.name == flowing_liquid then
 					set_node(pos, check_node)
 					set_node(check_pos, node)
-					break
+					return
 				end
 			end
 		end
@@ -153,12 +150,15 @@ if springs then
 		chance = 1,
 		catch_up = false,
 		action = function(pos,node)
+			local check_node
+			local check_node_name
 			while pos.y <= 0 do -- TODO: find mapgen water level for this check
 				pos.y = pos.y + 1
-				local check_node = get_node(pos)
-				if check_node.name == "air" or check_node.name == "default:water_flowing" then
+				check_node = get_node(pos)
+				check_node_name = check_node.name
+				if check_node_name == "air" or check_node_name == "default:water_flowing" then
 					set_node(pos, {name="default:water_source"})
-				elseif check_node.name ~= "default:water_source" then
+				elseif check_node_name ~= "default:water_source" then
 					--Something's been put on top of this clay, don't send water through it
 					break
 				end

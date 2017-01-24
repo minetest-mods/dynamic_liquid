@@ -87,7 +87,7 @@ local liquid_abm = function(liquid, flowing_liquid, chance)
 				set_node(check_pos, node)
 				return
 			end
-			perm = all_direction_permutations[math.random(24)]
+			local perm = all_direction_permutations[math.random(24)]
 			local dirs -- declare outside of loop so it won't keep entering/exiting scope
 			for i=1,4 do
 				dirs = perm[i]
@@ -190,8 +190,8 @@ if springs then
 		catch_up = false,
 		action = function(pos,node)
 			pos.y = pos.y + 1
-			check_node = get_node(pos)
-			check_node_name = check_node.name
+			local check_node = get_node(pos)
+			local check_node_name = check_node.name
 			if check_node_name == "air" or check_node_name == "default:water_flowing" then
 				set_node(pos, {name="default:water_source"})
 			end

@@ -155,9 +155,9 @@ if springs then
 		action = function(pos,node)
 			while pos.y <= 0 do -- TODO: find mapgen water level for this check
 				pos.y = pos.y + 1
-				local check_node = minetest.get_node(pos)
+				local check_node = get_node(pos)
 				if check_node.name == "air" or check_node.name == "default:water_flowing" then
-					minetest.set_node(pos, {name="default:water_source"})
+					set_node(pos, {name="default:water_source"})
 				elseif check_node.name ~= "default:water_source" then
 					--Something's been put on top of this clay, don't send water through it
 					break

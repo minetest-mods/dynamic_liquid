@@ -15,7 +15,8 @@ end
 local springs = minetest.setting_getbool("dynamic_liquid_springs")
 springs = springs or springs == nil -- default true
 
--- One must override a registered node definition with a new one, can't just twiddle with the parameters of the existing table
+-- must override a registered node definition with a brand new one,
+-- can't just twiddle with the parameters of the existing table for some reason
 local duplicate_def = function (name)
 	local old_def = minetest.registered_nodes[name]
 	local new_def = {}
@@ -73,6 +74,12 @@ local horiz_add = function(pos, dir, out)
 	out.z=pos.z + dir.z
 end
 
+-- This is getting a bit silly, but hopefully every bit of optimization counts.
+-- By recording local pointers to the get and set methods we avoid a couple of
+-- table lookups in each ABM call.
+local get_node = minetest.get_node
+local set_node = minetest.set_node
+
 local liquid_abm = function(liquid, flowing_liquid, chance)
 	minetest.register_abm({
 		nodenames = {liquid},
@@ -82,19 +89,19 @@ local liquid_abm = function(liquid, flowing_liquid, chance)
 		catch_up = false,
 		action = function(pos,node)
 			local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
-			local check_node = minetest.get_node(check_pos)
+			local check_node = get_node(check_pos)
 			if check_node.name == flowing_liquid then
-				minetest.set_node(pos, check_node)
-				minetest.set_node(check_pos, node)
+				set_node(pos, check_node)
+				set_node(check_pos, node)
 				return
 			end
 			perm = all_direction_permutations[math.random(24)]
 			for i=1,4 do
-				horiz_add(pos, perm[i], check_pos)
-				check_node = minetest.get_node(check_pos)
+				horiz_add(pos, perm[i], check_pos) -- reuse check_pos to avoid allocating a new table
+				check_node = get_node(check_pos)
 				if check_node.name == flowing_liquid then
-					minetest.set_node(pos, check_node)
-					minetest.set_node(check_pos, node)
+					set_node(pos, check_node)
+					set_node(check_pos, node)
 					break
 				end
 			end

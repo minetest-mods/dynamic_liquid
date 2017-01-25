@@ -79,7 +79,7 @@ local liquid_abm = function(liquid, flowing_liquid, chance)
 		interval = 1,
 		chance = chance or 1,
 		catch_up = false,
-		action = function(pos,node) -- Do *everything* possible to optimize this method
+		action = function(pos,node) -- Do everything possible to optimize this method
 			local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
 			local check_node = get_node(check_pos)
 			if check_node.name == flowing_liquid then

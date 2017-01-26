@@ -1,3 +1,76 @@
+dynamic_liquid = {} -- global table to expose liquid_abm for other mods' usage
+
+-- By making this giant table of all possible permutations of horizontal direction we can avoid
+-- lots of redundant calculations.
+local all_direction_permutations = {
+	{{x=0,z=1},{x=0,z=-1},{x=1,z=0},{x=-1,z=0}},
+	{{x=0,z=1},{x=0,z=-1},{x=-1,z=0},{x=1,z=0}},
+	{{x=0,z=1},{x=1,z=0},{x=0,z=-1},{x=-1,z=0}},
+	{{x=0,z=1},{x=1,z=0},{x=-1,z=0},{x=0,z=-1}},
+	{{x=0,z=1},{x=-1,z=0},{x=0,z=-1},{x=1,z=0}},
+	{{x=0,z=1},{x=-1,z=0},{x=1,z=0},{x=0,z=-1}},
+	{{x=0,z=-1},{x=0,z=1},{x=-1,z=0},{x=1,z=0}},
+	{{x=0,z=-1},{x=0,z=1},{x=1,z=0},{x=-1,z=0}},
+	{{x=0,z=-1},{x=1,z=0},{x=-1,z=0},{x=0,z=1}},
+	{{x=0,z=-1},{x=1,z=0},{x=0,z=1},{x=-1,z=0}},
+	{{x=0,z=-1},{x=-1,z=0},{x=1,z=0},{x=0,z=1}},
+	{{x=0,z=-1},{x=-1,z=0},{x=0,z=1},{x=1,z=0}},
+	{{x=1,z=0},{x=0,z=1},{x=0,z=-1},{x=-1,z=0}},
+	{{x=1,z=0},{x=0,z=1},{x=-1,z=0},{x=0,z=-1}},
+	{{x=1,z=0},{x=0,z=-1},{x=0,z=1},{x=-1,z=0}},
+	{{x=1,z=0},{x=0,z=-1},{x=-1,z=0},{x=0,z=1}},
+	{{x=1,z=0},{x=-1,z=0},{x=0,z=1},{x=0,z=-1}},
+	{{x=1,z=0},{x=-1,z=0},{x=0,z=-1},{x=0,z=1}},
+	{{x=-1,z=0},{x=0,z=1},{x=1,z=0},{x=0,z=-1}},
+	{{x=-1,z=0},{x=0,z=1},{x=0,z=-1},{x=1,z=0}},
+	{{x=-1,z=0},{x=0,z=-1},{x=1,z=0},{x=0,z=1}},
+	{{x=-1,z=0},{x=0,z=-1},{x=0,z=1},{x=1,z=0}},
+	{{x=-1,z=0},{x=1,z=0},{x=0,z=-1},{x=0,z=1}},
+	{{x=-1,z=0},{x=1,z=0},{x=0,z=1},{x=0,z=-1}},
+}
+
+-- This is getting a bit silly, but hopefully every bit of optimization counts.
+-- By recording local pointers to the get and set methods we avoid a couple of
+-- table lookups in each ABM call.
+local get_node = minetest.get_node
+local set_node = minetest.set_node
+
+dynamic_liquid.liquid_abm = function(liquid, flowing_liquid, chance)
+	minetest.register_abm({
+		nodenames = {liquid},
+		neighbors = {flowing_liquid},
+		interval = 1,
+		chance = chance or 1,
+		catch_up = false,
+		action = function(pos,node) -- Do everything possible to optimize this method
+			local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
+			local check_node = get_node(check_pos)
+			local check_node_name = check_node.name
+			if check_node_name == flowing_liquid or check_node_name == "air" then
+				set_node(pos, check_node)
+				set_node(check_pos, node)
+				return
+			end
+			local perm = all_direction_permutations[math.random(24)]
+			local dirs -- declare outside of loop so it won't keep entering/exiting scope
+			for i=1,4 do
+				dirs = perm[i]
+				-- reuse check_pos to avoid allocating a new table
+				check_pos.x = pos.x + dirs.x 
+				check_pos.y = pos.y
+				check_pos.z = pos.z + dirs.z
+				check_node = get_node(check_pos)
+				check_node_name = check_node.name
+				if check_node_name == flowing_liquid or check_node_name == "air" then
+					set_node(pos, check_node)
+					set_node(check_pos, node)
+					return
+				end
+			end
+		end
+	})
+end
+
 local water = minetest.setting_getbool("dynamic_liquid_water")
 water = water or water == nil -- default true
 
@@ -37,85 +110,14 @@ if water then
 	minetest.register_node(":default:water_flowing", new_water_flowing_def)
 end
 
--- By making this giant table of all possible permutations of horizontal direction we can avoid
--- lots of redundant calculations.
-local all_direction_permutations = {
-	{{x=0,z=1},{x=0,z=-1},{x=1,z=0},{x=-1,z=0}},
-	{{x=0,z=1},{x=0,z=-1},{x=-1,z=0},{x=1,z=0}},
-	{{x=0,z=1},{x=1,z=0},{x=0,z=-1},{x=-1,z=0}},
-	{{x=0,z=1},{x=1,z=0},{x=-1,z=0},{x=0,z=-1}},
-	{{x=0,z=1},{x=-1,z=0},{x=0,z=-1},{x=1,z=0}},
-	{{x=0,z=1},{x=-1,z=0},{x=1,z=0},{x=0,z=-1}},
-	{{x=0,z=-1},{x=0,z=1},{x=-1,z=0},{x=1,z=0}},
-	{{x=0,z=-1},{x=0,z=1},{x=1,z=0},{x=-1,z=0}},
-	{{x=0,z=-1},{x=1,z=0},{x=-1,z=0},{x=0,z=1}},
-	{{x=0,z=-1},{x=1,z=0},{x=0,z=1},{x=-1,z=0}},
-	{{x=0,z=-1},{x=-1,z=0},{x=1,z=0},{x=0,z=1}},
-	{{x=0,z=-1},{x=-1,z=0},{x=0,z=1},{x=1,z=0}},
-	{{x=1,z=0},{x=0,z=1},{x=0,z=-1},{x=-1,z=0}},
-	{{x=1,z=0},{x=0,z=1},{x=-1,z=0},{x=0,z=-1}},
-	{{x=1,z=0},{x=0,z=-1},{x=0,z=1},{x=-1,z=0}},
-	{{x=1,z=0},{x=0,z=-1},{x=-1,z=0},{x=0,z=1}},
-	{{x=1,z=0},{x=-1,z=0},{x=0,z=1},{x=0,z=-1}},
-	{{x=1,z=0},{x=-1,z=0},{x=0,z=-1},{x=0,z=1}},
-	{{x=-1,z=0},{x=0,z=1},{x=1,z=0},{x=0,z=-1}},
-	{{x=-1,z=0},{x=0,z=1},{x=0,z=-1},{x=1,z=0}},
-	{{x=-1,z=0},{x=0,z=-1},{x=1,z=0},{x=0,z=1}},
-	{{x=-1,z=0},{x=0,z=-1},{x=0,z=1},{x=1,z=0}},
-	{{x=-1,z=0},{x=1,z=0},{x=0,z=-1},{x=0,z=1}},
-	{{x=-1,z=0},{x=1,z=0},{x=0,z=1},{x=0,z=-1}},
-}
-
--- This is getting a bit silly, but hopefully every bit of optimization counts.
--- By recording local pointers to the get and set methods we avoid a couple of
--- table lookups in each ABM call.
-local get_node = minetest.get_node
-local set_node = minetest.set_node
-
-local liquid_abm = function(liquid, flowing_liquid, chance)
-	minetest.register_abm({
-		nodenames = {liquid},
-		neighbors = {flowing_liquid},
-		interval = 1,
-		chance = chance or 1,
-		catch_up = false,
-		action = function(pos,node) -- Do everything possible to optimize this method
-			local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
-			local check_node = get_node(check_pos)
-			local check_node_name = check_node.name
-			if check_node_name == flowing_liquid or check_node_name == "air" then
-				set_node(pos, check_node)
-				set_node(check_pos, node)
-				return
-			end
-			local perm = all_direction_permutations[math.random(24)]
-			local dirs -- declare outside of loop so it won't keep entering/exiting scope
-			for i=1,4 do
-				dirs = perm[i]
-				-- reuse check_pos to avoid allocating a new table
-				check_pos.x = pos.x + dirs.x 
-				check_pos.y = pos.y
-				check_pos.z = pos.z + dirs.z
-				check_node = get_node(check_pos)
-				check_node_name = check_node.name
-				if check_node_name == flowing_liquid or check_node_name == "air" then
-					set_node(pos, check_node)
-					set_node(check_pos, node)
-					return
-				end
-			end
-		end
-	})
-end
-
 if lava then
-	liquid_abm("default:lava_source", "default:lava_flowing", lava_probability)
+	dynamic_liquid.liquid_abm("default:lava_source", "default:lava_flowing", lava_probability)
 end
 if water then
-	liquid_abm("default:water_source", "default:water_flowing", 1)
+	dynamic_liquid.liquid_abm("default:water_source", "default:water_flowing", 1)
 end
 if river_water then	
-	liquid_abm("default:river_water_source", "default:river_water_flowing", 1)
+	dynamic_liquid.liquid_abm("default:river_water_source", "default:river_water_flowing", 1)
 end
 
 -- register damp clay whether we're going to set the ABM or not, if the user disables this feature we don't want existing

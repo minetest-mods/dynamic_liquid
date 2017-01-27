@@ -136,7 +136,7 @@ if springs then
 
 	-- Turn mapgen clay into spring clay
 	minetest.register_on_generated(function(minp, maxp, seed)
-		if minp.y >= 0 or maxp.y <= -15 then
+		if minp.y >= water_level or maxp.y <= -15 then
 			return
 		end
 		local vm, emin, emax = minetest.get_mapgen_object("voxelmanip")

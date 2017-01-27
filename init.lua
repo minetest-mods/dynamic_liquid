@@ -132,7 +132,8 @@ minetest.register_node("dynamic_liquid:clay", clay_def)
 if springs then	
 	local c_clay = minetest.get_content_id("default:clay")
 	local c_spring_clay = minetest.get_content_id("dynamic_liquid:clay")
-	
+	local water_level = minetest.get_mapgen_params().water_level
+
 	-- Turn mapgen clay into spring clay
 	minetest.register_on_generated(function(minp, maxp, seed)
 		if minp.y >= 0 or maxp.y <= -15 then
@@ -159,7 +160,7 @@ if springs then
 		action = function(pos,node)
 			local check_node
 			local check_node_name
-			while pos.y <= 0 do -- TODO: find mapgen water level for this check
+			while pos.y < water_level do
 				pos.y = pos.y + 1
 				check_node = get_node(pos)
 				check_node_name = check_node.name

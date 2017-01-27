@@ -129,6 +129,8 @@ if not springs then
 end
 minetest.register_node("dynamic_liquid:clay", clay_def)
 
+local data = {}
+
 if springs then	
 	local c_clay = minetest.get_content_id("default:clay")
 	local c_spring_clay = minetest.get_content_id("dynamic_liquid:clay")
@@ -140,7 +142,7 @@ if springs then
 			return
 		end
 		local vm, emin, emax = minetest.get_mapgen_object("voxelmanip")
-		local data = vm:get_data()
+		vm:get_data(data)
 		
 		for voxelpos, voxeldata in pairs(data) do
 			if voxeldata == c_clay then
@@ -148,7 +150,7 @@ if springs then
 			end
 		end
 		vm:set_data(data)
-		vm:write_to_map()	
+		vm:write_to_map()
 	end)
 	
 	minetest.register_abm({

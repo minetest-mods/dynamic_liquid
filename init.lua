@@ -29,9 +29,6 @@ local all_direction_permutations = {
 	{{x=-1,z=0},{x=1,z=0},{x=0,z=1},{x=0,z=-1}},
 }
 
--- This is getting a bit silly, but hopefully every bit of optimization counts.
--- By recording local pointers to the get and set methods we avoid a couple of
--- table lookups in each ABM call.
 local get_node = minetest.get_node
 local set_node = minetest.set_node
 

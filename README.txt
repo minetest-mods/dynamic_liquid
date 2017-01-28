@@ -1,7 +1,7 @@
 This mod implements a simple approach to making the various liquid node types (water, lava) behave in a more realistic manner. In a nutshell, it sets an Active Block Modifier running for liquid nodes that implements the following behavior:
 
-* If there is a "flowing" node below the "source" liquid block, swap the liquid block with the flowing node (the liquid drops)
-* Else if there is at least one "flowing" node beside the "source" liquid block, swap with a random flowing node beside it.
+* If there is a "flowing" or air node below a "source" liquid block, swap the liquid block with the node below it (ie, the liquid drops)
+* Else swap with a random flowing or air node beside it.
 
 This causes "source" blocks for liquids to randomly shuffle around when they don't completely fill a horizontal layer, and causes them to drain rapidly down holes or flow rapidly down hillsides. Normal "flowing" behaviour is unchanged so even though this mod is just moving cubes around the surface of the water looks reasonably smooth. The ABM only runs for blocks that are adjacent to flowing nodes and does very few calculations so it's also reasonably lightweight - I'm essentially borrowing the engine's built-in liquid flow detection to determine when my own code needs to run.
 

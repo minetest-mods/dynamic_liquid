@@ -80,10 +80,21 @@ river_water = river_water or river_water == nil -- default true
 local lava = minetest.setting_getbool("dynamic_liquid_lava")
 lava = lava or lava == nil -- default true
 
+local water_probability = tonumber(minetest.setting_get("dynamic_liquid_water_flow_propability"))
+if water_probability == nil then
+	water_probability = 1
+end
+
+local river_water_probability = tonumber(minetest.setting_get("dynamic_liquid_river_water_flow_propability"))
+if river_water_probability == nil then
+	river_water_probability = 1
+end
+
 local lava_probability = tonumber(minetest.setting_get("dynamic_liquid_lava_flow_propability"))
 if lava_probability == nil then
 	lava_probability = 5
 end
+
 
 local springs = minetest.setting_getbool("dynamic_liquid_springs")
 springs = springs or springs == nil -- default true
@@ -114,10 +125,10 @@ if lava then
 	dynamic_liquid.liquid_abm("default:lava_source", "default:lava_flowing", lava_probability)
 end
 if water then
-	dynamic_liquid.liquid_abm("default:water_source", "default:water_flowing", 1)
+	dynamic_liquid.liquid_abm("default:water_source", "default:water_flowing", water_probability)
 end
 if river_water then	
-	dynamic_liquid.liquid_abm("default:river_water_source", "default:river_water_flowing", 1)
+	dynamic_liquid.liquid_abm("default:river_water_source", "default:river_water_flowing", river_water_probability)
 end
 
 -- register damp clay whether we're going to set the ABM or not, if the user disables this feature we don't want existing

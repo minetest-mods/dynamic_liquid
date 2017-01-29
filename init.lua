@@ -68,6 +68,10 @@ dynamic_liquid.liquid_abm = function(liquid, flowing_liquid, chance)
 	})
 end
 
+if not minetest.get_modpath("default") then
+	return
+end
+
 local water = minetest.setting_getbool("dynamic_liquid_water")
 water = water or water == nil -- default true
 

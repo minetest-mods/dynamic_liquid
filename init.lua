@@ -75,8 +75,7 @@ end
 local water = minetest.setting_getbool("dynamic_liquid_water")
 water = water or water == nil -- default true
 
-local river_water = minetest.setting_getbool("dynamic_liquid_river_water")
-river_water = river_water or river_water == nil -- default true
+local river_water = minetest.setting_getbool("dynamic_liquid_river_water") -- default false
 
 local lava = minetest.setting_getbool("dynamic_liquid_lava")
 lava = lava or lava == nil -- default true

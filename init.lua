@@ -1,5 +1,9 @@
 dynamic_liquid = {} -- global table to expose liquid_abm for other mods' usage
 
+-- internationalization boilerplate
+local MP = minetest.get_modpath(minetest.get_current_modname())
+local S, NS = dofile(MP.."/intllib.lua")
+
 -- By making this giant table of all possible permutations of horizontal direction we can avoid
 -- lots of redundant calculations.
 local all_direction_permutations = {
@@ -134,7 +138,7 @@ end
 -- register damp clay whether we're going to set the ABM or not, if the user disables this feature we don't want existing
 -- spring clay to turn into unknown nodes.
 local clay_def = duplicate_def("default:clay")
-clay_def.description = "Damp Clay"
+clay_def.description = S("Damp Clay")
 if not springs then
 	clay_def.groups.not_in_creative_inventory = 1 -- take it out of creative inventory though
 end
@@ -190,7 +194,7 @@ if springs then
 	-- This is a creative-mode only node that produces a modest amount of water continuously no matter where it is.
 	-- Allow this one to turn into "unknown node" when this feature is disabled, since players had to explicitly place it.
 	minetest.register_node("dynamic_liquid:spring", {
-	description = "Spring",
+	description = S("Spring"),
 	drops = "default:gravel",
 	tiles = {"default_cobble.png^[combine:16x80:0,-48=crack_anylength.png",
 		"default_cobble.png","default_cobble.png","default_cobble.png","default_cobble.png","default_cobble.png",

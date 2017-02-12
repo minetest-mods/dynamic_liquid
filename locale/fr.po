@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-02-02 20:18-0700\n"
+"POT-Creation-Date: 2017-02-12 12:55-0700\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -23,3 +23,15 @@ msgstr "Argile humide"
 #: init.lua:197
 msgid "Spring"
 msgstr "Source"
+
+#: init.lua:198
+msgid ""
+"A natural spring that generates an endless stream of water source blocks"
+msgstr ""
+
+#: init.lua:199
+msgid ""
+"Generates one source block of water directly on top of itself once per "
+"second, provided the space is clear. If this natural spring is dug out the "
+"flow stops and it is turned into ordinary cobble."
+msgstr ""

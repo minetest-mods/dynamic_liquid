@@ -194,14 +194,16 @@ if springs then
 	-- This is a creative-mode only node that produces a modest amount of water continuously no matter where it is.
 	-- Allow this one to turn into "unknown node" when this feature is disabled, since players had to explicitly place it.
 	minetest.register_node("dynamic_liquid:spring", {
-	description = S("Spring"),
-	drops = "default:gravel",
-	tiles = {"default_cobble.png^[combine:16x80:0,-48=crack_anylength.png",
-		"default_cobble.png","default_cobble.png","default_cobble.png","default_cobble.png","default_cobble.png",
-		},
-	is_ground_content = false,
-	groups = {cracky = 3, stone = 2},
-	sounds = default.node_sound_gravel_defaults(),
+		description = S("Spring"),
+		_doc_items_longdesc = S("A natural spring that generates an endless stream of water source blocks"),
+		_doc_items_usagehelp = S("Generates one source block of water directly on top of itself once per second, provided the space is clear. If this natural spring is dug out the flow stops and it is turned into ordinary cobble."),
+		drops = "default:gravel",
+		tiles = {"default_cobble.png^[combine:16x80:0,-48=crack_anylength.png",
+			"default_cobble.png","default_cobble.png","default_cobble.png","default_cobble.png","default_cobble.png",
+			},
+		is_ground_content = false,
+		groups = {cracky = 3, stone = 2},
+		sounds = default.node_sound_gravel_defaults(),
 	})
 	
 	minetest.register_abm({

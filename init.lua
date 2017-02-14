@@ -99,30 +99,14 @@ if lava_probability == nil then
 	lava_probability = 5
 end
 
-
 local springs = minetest.setting_getbool("dynamic_liquid_springs")
 springs = springs or springs == nil -- default true
 
--- must override a registered node definition with a brand new one,
--- can't just twiddle with the parameters of the existing table for some reason
-local duplicate_def = function (name)
-	local old_def = minetest.registered_nodes[name]
-	local new_def = {}
-	for param, value in pairs(old_def) do
-		new_def[param] = value
-	end
-	return new_def
-end
-
 if water then
 	-- override water_source and water_flowing with liquid_renewable set to false
-	local new_water_def = duplicate_def("default:water_source")
-	new_water_def.liquid_renewable = false
-	minetest.register_node(":default:water_source", new_water_def)
-
-	local new_water_flowing_def = duplicate_def("default:water_flowing")
-	new_water_flowing_def.liquid_renewable = false
-	minetest.register_node(":default:water_flowing", new_water_flowing_def)
+	local override_def = {liquid_renewable = false}
+	minetest.override_item("default:water_source", override_def)
+	minetest.override_item("default:water_flowing", override_def)
 end
 
 if lava then
@@ -133,6 +117,15 @@ if water then
 end
 if river_water then	
 	dynamic_liquid.liquid_abm("default:river_water_source", "default:river_water_flowing", river_water_probability)
+end
+
+local duplicate_def = function (name)
+	local old_def = minetest.registered_nodes[name]
+	local new_def = {}
+	for param, value in pairs(old_def) do
+		new_def[param] = value
+	end
+	return new_def
 end
 
 -- register damp clay whether we're going to set the ABM or not, if the user disables this feature we don't want existing

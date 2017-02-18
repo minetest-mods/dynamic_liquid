@@ -1,11 +1,15 @@
 dynamic_liquid = {} -- global table to expose liquid_abm for other mods' usage
 
+dynamic_liquid.registered_liquids = {} -- used by the flow-through node abm
+dynamic_liquid.registered_liquid_neighbors = {}
+
 -- internationalization boilerplate
 local MP = minetest.get_modpath(minetest.get_current_modname())
 local S, NS = dofile(MP.."/intllib.lua")
 
 -- By making this giant table of all possible permutations of horizontal direction we can avoid
 -- lots of redundant calculations.
+
 local all_direction_permutations = {
 	{{x=0,z=1},{x=0,z=-1},{x=1,z=0},{x=-1,z=0}},
 	{{x=0,z=1},{x=0,z=-1},{x=-1,z=0},{x=1,z=0}},
@@ -36,8 +40,12 @@ local all_direction_permutations = {
 local get_node = minetest.get_node
 local set_node = minetest.set_node
 
+-- Dynamic liquids
+-----------------------------------------------------------------------------------------------------------------------
+
 dynamic_liquid.liquid_abm = function(liquid, flowing_liquid, chance)
 	minetest.register_abm({
+		label = "dynamic_liquid " .. liquid,
 		nodenames = {liquid},
 		neighbors = {flowing_liquid},
 		interval = 1,
@@ -69,7 +77,9 @@ dynamic_liquid.liquid_abm = function(liquid, flowing_liquid, chance)
 				end
 			end
 		end
-	})
+	})	
+	dynamic_liquid.registered_liquids[liquid] = flowing_liquid
+	table.insert(dynamic_liquid.registered_liquid_neighbors, liquid)
 end
 
 if not minetest.get_modpath("default") then
@@ -119,6 +129,110 @@ if river_water then
 	dynamic_liquid.liquid_abm("default:river_water_source", "default:river_water_flowing", river_water_probability)
 end
 
+-- Flow-through nodes
+-----------------------------------------------------------------------------------------------------------------------
+
+local flow_through = minetest.setting_getbool("dynamic_liquid_flow_through")
+flow_through = flow_through or flow_through == nil -- default true
+
+if flow_through then
+
+	local flow_through_directions = {
+		{{x=1,z=0},{x=0,z=1}},
+		{{x=0,z=1},{x=1,z=0}},
+	}
+	
+	minetest.register_abm({
+		label = "dynamic_liquid flow-through",
+		nodenames = {"group:flow_through", "group:leaves", "group:sapling", "group:grass", "group:dry_grass", "group:flora", "groups:rail", "groups:flower"},
+		neighbors = dynamic_liquid.registered_liquid_neighbors,
+		interval = 1,
+		chance = 2, -- since liquid is teleported two nodes by this abm, halve the chance
+		catch_up = false,
+		action = function(pos)
+			local source_pos = {x=pos.x, y=pos.y+1, z=pos.z}
+			local dest_pos = {x=pos.x, y=pos.y-1, z=pos.z}
+			local source_node = get_node(source_pos)
+			local dest_node
+			local source_flowing_node = dynamic_liquid.registered_liquids[source_node.name]
+			local dest_flowing_node
+			if source_flowing_node ~= nil then
+				dest_node = minetest.get_node(dest_pos)
+				if dest_node.name == source_flowing_node or dest_node.name == "air" then
+					set_node(dest_pos, source_node)
+					set_node(source_pos, dest_node)
+					return
+				end
+			end
+			
+			local perm = flow_through_directions[math.random(2)]
+			local dirs -- declare outside of loop so it won't keep entering/exiting scope
+			for i=1,2 do
+				dirs = perm[i]
+				-- reuse to avoid allocating a new table
+				source_pos.x = pos.x + dirs.x 
+				source_pos.y = pos.y
+				source_pos.z = pos.z + dirs.z
+				
+				dest_pos.x = pos.x - dirs.x 
+				dest_pos.y = pos.y
+				dest_pos.z = pos.z - dirs.z			
+				
+				source_node = get_node(source_pos)
+				dest_node = get_node(dest_pos)
+				source_flowing_node = dynamic_liquid.registered_liquids[source_node.name]
+				dest_flowing_node = dynamic_liquid.registered_liquids[dest_node.name]
+				
+				if (source_flowing_node ~= nil and (dest_node.name == source_flowing_node or dest_node.name == "air")) or
+					(dest_flowing_node ~= nil and (source_node.name == dest_flowing_node or source_node.name == "air"))
+				then
+					set_node(source_pos, dest_node)
+					set_node(dest_pos, source_node)
+					return
+				end
+			end		
+		end,
+	})
+
+	local add_flow_through = function(node_name)
+		minetest.debug("adding flow through to", node_name)
+		local node_def = minetest.registered_nodes[node_name]
+		new_groups = node_def.groups
+		new_groups.flow_through = 1
+		minetest.override_item(node_name,{groups = groups})
+	end
+
+	if minetest.get_modpath("default") then
+		for _, name in pairs({
+			"default:apple",
+			"default:papyrus",
+			"default:dry_shrub",
+			"default:bush_stem",
+			"default:acacia_bush_stem",
+			"default:sign_wall_wood",
+			"default:sign_wall_steel",
+			"default:ladder_wood",
+			"default:ladder_steel",
+			"default:fence_wood",
+			"default:fence_acacia_wood",
+			"default:fence_junglewood",
+			"default:fence_pine_wood",
+			"default:fence_aspen_wood",
+		}) do
+			add_flow_through(name)
+		end
+	end
+	
+	if minetest.get_modpath("xpanes") then
+		add_flow_through("xpanes:bar")
+		add_flow_through("xpanes:bar_flat")
+	end
+end
+
+
+-- Springs
+-----------------------------------------------------------------------------------------------------------------------
+
 local duplicate_def = function (name)
 	local old_def = minetest.registered_nodes[name]
 	local new_def = {}
@@ -162,6 +276,7 @@ if springs then
 	end)
 	
 	minetest.register_abm({
+		label = "dynamic_liquid damp clay spring",
 		nodenames = {"dynamic_liquid:clay"},
 		neighbors = {"air", "default:water_source", "default:water_flowing"},
 		interval = 1,
@@ -200,6 +315,7 @@ if springs then
 	})
 	
 	minetest.register_abm({
+		label = "dynamic_liquid creative spring",
 		nodenames = {"dynamic_liquid:spring"},
 		neighbors = {"air", "default:water_flowing"},
 		interval = 1,

@@ -16,6 +16,14 @@ dynamic_liquid_lava (Dynamic lava) bool true
 #source in creative mode.
 dynamic_liquid_springs (Springs) bool true
 
+#Allows dynamic liquids to "teleport" through nodes that should allow liquids to
+#pass through. This includes the groups:
+#leaves, sapling, grass, dry_grass, flora, rail, flower
+#As well as select other nodes from the default game's definitions. Other mods
+#can set nodes as flow-through by adding them to these groups or to the group
+#"flow_through"
+dynamic_liquid_flow_through (Flow-through) bool true
+
 [Flow Rates]
 
 #Sets the probability of water flow per block per second.

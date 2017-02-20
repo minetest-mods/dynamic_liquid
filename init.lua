@@ -195,9 +195,8 @@ if flow_through then
 	})
 
 	local add_flow_through = function(node_name)
-		minetest.debug("adding flow through to", node_name)
 		local node_def = minetest.registered_nodes[node_name]
-		new_groups = node_def.groups
+		local new_groups = node_def.groups
 		new_groups.flow_through = 1
 		minetest.override_item(node_name,{groups = groups})
 	end

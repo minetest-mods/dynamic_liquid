@@ -198,7 +198,7 @@ if flow_through then
 		local node_def = minetest.registered_nodes[node_name]
 		local new_groups = node_def.groups
 		new_groups.flow_through = 1
-		minetest.override_item(node_name,{groups = groups})
+		minetest.override_item(node_name,{groups = new_groups})
 	end
 
 	if minetest.get_modpath("default") then

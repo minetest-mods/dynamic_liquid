@@ -330,3 +330,39 @@ if springs then
 		end
 	})	
 end
+
+local mapgen_prefill = minetest.setting_getbool("dynamic_liquid_mapgen_prefill")
+mapgen_prefill = mapgen_prefill or mapgen_prefill == nil -- default true
+
+if mapgen_prefill then
+	local c_water = minetest.get_content_id("default:water_source")
+	local c_air = minetest.get_content_id("air")
+	local water_level = minetest.get_mapgen_params().water_level
+
+	minetest.register_on_generated(function(minp, maxp, seed)
+		if minp.y >= water_level then
+			return
+		end
+	
+		local vm, emin, emax = minetest.get_mapgen_object("voxelmanip")
+		local area = VoxelArea:new{MinEdge=emin, MaxEdge=emax}
+		vm:get_data(data)
+		
+		local filling = false
+		for z = minp.z, maxp.z do
+			for x = minp.x, maxp.x do
+				for y = maxp.y, minp.y, -1 do
+					local vi = area:index(x,y,z)
+					if data[vi] == c_water then
+						filling = true
+					elseif data[vi] == c_air and filling == true then
+						data[vi] = c_water
+					else filling = false end
+				end
+				filling = false
+			end
+		end
+		vm:set_data(data)
+		vm:write_to_map()
+	end)
+end

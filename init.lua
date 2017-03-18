@@ -364,5 +364,6 @@ if mapgen_prefill then
 		end
 		vm:set_data(data)
 		vm:write_to_map()
+		vm:update_liquids()
 	end)
 end

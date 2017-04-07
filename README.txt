@@ -28,7 +28,7 @@ Other mods can mark blocks as flow-through by adding them to the "flow_through" 
 Lava/Water Interaction
 ======================
 
-Due to the way default lava/water interaction works a single block of lava_source would be able to wander endlessly around on the surface of the ocean turning the uppermost layer of water into stone. Similarly, a single block of water_source could wander around on the surface of a lava pool turning the uppermost layer into obsidian. This is an undesireable outcome so the dynamic_liquid mod includes a more sophisticated replacement to the default lava-cooling ABM.
+Due to the way default lava/water interaction works a single block of lava_source would be able to wander endlessly around on the surface of the ocean turning the uppermost layer of water into stone. Similarly, a single block of water_source could wander around on the surface of a lava pool turning the uppermost layer into obsidian. This is an undesirable outcome so the dynamic_liquid mod includes a more sophisticated replacement to the default lava-cooling ABM.
 
 lava_flowing nodes are now eliminated entirely by nodes marked cools_lava, they do not leave behind default:stone. This means that infinite stone generation is no longer possible using arrangements of lava and water.
 

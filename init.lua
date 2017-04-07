@@ -3,6 +3,8 @@ dynamic_liquid = {} -- global table to expose liquid_abm for other mods' usage
 dynamic_liquid.registered_liquids = {} -- used by the flow-through node abm
 dynamic_liquid.registered_liquid_neighbors = {}
 
+local water_level = tonumber(minetest.get_mapgen_setting("water_level"))
+
 -- internationalization boilerplate
 local MP = minetest.get_modpath(minetest.get_current_modname())
 local S, NS = dofile(MP.."/intllib.lua")
@@ -257,7 +259,6 @@ local data = {}
 if springs then	
 	local c_clay = minetest.get_content_id("default:clay")
 	local c_spring_clay = minetest.get_content_id("dynamic_liquid:clay")
-	local water_level = minetest.get_mapgen_params().water_level
 
 	-- Turn mapgen clay into spring clay
 	minetest.register_on_generated(function(minp, maxp, seed)
@@ -339,7 +340,6 @@ mapgen_prefill = mapgen_prefill or mapgen_prefill == nil -- default true
 if mapgen_prefill then
 	local c_water = minetest.get_content_id("default:water_source")
 	local c_air = minetest.get_content_id("air")
-	local water_level = minetest.get_mapgen_params().water_level
 
 	minetest.register_on_generated(function(minp, maxp, seed)
 		if minp.y >= water_level then

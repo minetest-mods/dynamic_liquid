@@ -33,6 +33,12 @@ dynamic_liquid_flow_through (Flow-through) bool true
 #block modifier in these situations.
 dynamic_liquid_mapgen_prefill (Mapgen water prefill) bool true
 
+#Dynamic liquid movement causes trouble with the default lava cooling system.
+#When set to true, this replaces the default lava cooling system with one
+#that will not result in oceans being paved over by a single wandering
+#lava block or lava seas being paved by a single wandering water block.
+dynamic_liquid_new_lava_cooling (Revised lava cooling) bool true
+
 [Flow Rates]
 
 #Sets the probability of water flow per block per second.

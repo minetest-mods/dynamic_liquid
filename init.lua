@@ -7,6 +7,8 @@ dynamic_liquid.registered_liquid_neighbors = {}
 local MP = minetest.get_modpath(minetest.get_current_modname())
 local S, NS = dofile(MP.."/intllib.lua")
 
+dofile(MP.."/cooling_lava.lua")
+
 -- By making this giant table of all possible permutations of horizontal direction we can avoid
 -- lots of redundant calculations.
 

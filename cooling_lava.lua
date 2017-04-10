@@ -5,6 +5,8 @@ new_lava_cooling = new_lava_cooling or new_lava_cooling == nil -- default true
 
 if not new_lava_cooling then return end
 
+local falling_obsidian = minetest.setting_getbool("dynamic_liquid_falling_obsidian")
+
 -- The existing cool_lava ABM is hard-coded to respond to water nodes
 -- and overriding node groups doesn't appear to work:
 -- https://github.com/minetest/minetest/issues/5518
@@ -195,7 +197,7 @@ local cool_lava_source = function(pos, node)
 	if obsidian_location ~= nil then
 		minetest.set_node(pos, {name = "air"})
 		minetest.set_node(obsidian_location, {name = "default:obsidian"})
-		if minetest.spawn_falling_node then -- TODO cutting-edge dev function, so check if it exists for the time being. Remove check when 0.4.16 is released.
+		if minetest.spawn_falling_node and falling_obsidian then -- TODO cutting-edge dev function, so check if it exists for the time being. Remove check when 0.4.16 is released.
 			minetest.spawn_falling_node(obsidian_location)
 		end
 	elseif #evaporate_list > 0 then

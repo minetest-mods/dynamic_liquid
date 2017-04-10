@@ -39,6 +39,11 @@ dynamic_liquid_mapgen_prefill (Mapgen water prefill) bool true
 #lava block or lava seas being paved by a single wandering water block.
 dynamic_liquid_new_lava_cooling (Revised lava cooling) bool true
 
+#When this is enabled, obsidian blocks spawned by lava cooling will fall from
+#their origin point like sand or gravel does. Otherwise, obsidian will still
+#behave the same - this occurs only when it's first created.
+dynamic_liquid_falling_obsidian (Falling obsidian) bool false
+
 [Flow Rates]
 
 #Sets the probability of water flow per block per second.

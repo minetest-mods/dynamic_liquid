@@ -195,6 +195,9 @@ local cool_lava_source = function(pos, node)
 	if obsidian_location ~= nil then
 		minetest.set_node(pos, {name = "air"})
 		minetest.set_node(obsidian_location, {name = "default:obsidian"})
+		if minetest.spawn_falling_node then -- TODO cutting-edge dev function, so check if it exists for the time being. Remove check when 0.4.16 is released.
+			minetest.spawn_falling_node(obsidian_location)
+		end
 	elseif #evaporate_list > 0 then
 		-- Again, this weird bit is necessary for breaking certain types of flow deadlock
 		local loc = evaporate_list[math.random(1,#evaporate_list)]

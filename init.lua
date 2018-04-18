@@ -200,6 +200,11 @@ if flow_through then
 
 	local add_flow_through = function(node_name)
 		local node_def = minetest.registered_nodes[node_name]
+		if node_def == nil then
+			minetest.log("error", "dynamic_liquid attempted to call add_flow_through on the node name "
+				.. node_name .. ", which was not found in minetest.registered_nodes.")
+			return
+		end
 		local new_groups = node_def.groups
 		new_groups.flow_through = 1
 		minetest.override_item(node_name,{groups = new_groups})
@@ -301,6 +306,13 @@ if springs then
 		end
 	})
 	
+	local spring_sounds = nil
+	if default.node_sound_gravel_defaults ~= nil then
+		spring_sounds = default.node_sound_gravel_defaults()
+	elseif default.node_sound_sand_defaults ~= nil then
+		spring_sounds = default.node_sound_dirt_defaults()
+	end
+	
 	-- This is a creative-mode only node that produces a modest amount of water continuously no matter where it is.
 	-- Allow this one to turn into "unknown node" when this feature is disabled, since players had to explicitly place it.
 	minetest.register_node("dynamic_liquid:spring", {
@@ -313,7 +325,7 @@ if springs then
 			},
 		is_ground_content = false,
 		groups = {cracky = 3, stone = 2},
-		sounds = default.node_sound_gravel_defaults(),
+		sounds = spring_sounds,
 	})
 	
 	minetest.register_abm({

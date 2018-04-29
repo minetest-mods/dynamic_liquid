@@ -235,6 +235,12 @@ if flow_through then
 		add_flow_through("xpanes:bar")
 		add_flow_through("xpanes:bar_flat")
 	end
+	
+	if minetest.get_modpath("carts") then
+		add_flow_through("carts:rail")
+		add_flow_through("carts:powerrail")
+		add_flow_through("carts:brakerail")
+	end
 end
 
 

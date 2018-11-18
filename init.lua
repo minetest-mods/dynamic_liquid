@@ -49,7 +49,7 @@ local set_node = minetest.set_node
 
 dynamic_liquid.liquid_abm = function(liquid, flowing_liquid, chance)
 	minetest.register_abm({
-		label = "dynamic_liquid " .. liquid,
+		label = "dynamic_liquid " .. liquid .. " and " .. flowing_liquid,
 		nodenames = {liquid},
 		neighbors = {flowing_liquid},
 		interval = 1,
@@ -355,12 +355,24 @@ end
 local mapgen_prefill = minetest.setting_getbool("dynamic_liquid_mapgen_prefill")
 mapgen_prefill = mapgen_prefill or mapgen_prefill == nil -- default true
 
+local waternodes
+
 if mapgen_prefill then
 	local c_water = minetest.get_content_id("default:water_source")
 	local c_air = minetest.get_content_id("air")
+	waternodes = {}
 
+	local fill_to = function (vi, data, area)
+		if area:containsi(vi) then
+			if data[vi] == c_air then
+				data[vi] = c_water
+				table.insert(waternodes, vi)
+			end
+		end
+	end
+	
 	minetest.register_on_generated(function(minp, maxp, seed)
-		if minp.y >= water_level then
+		if minp.y >= water_level or maxp.y < -70 then
 			return
 		end
 	
@@ -368,20 +380,29 @@ if mapgen_prefill then
 		local area = VoxelArea:new{MinEdge=emin, MaxEdge=emax}
 		vm:get_data(data)
 		
-		local filling = false
-		for z = minp.z, maxp.z do
-			for x = minp.x, maxp.x do
-				for y = maxp.y, minp.y, -1 do
-					local vi = area:index(x,y,z)
-					if data[vi] == c_water then
-						filling = true
-					elseif data[vi] == c_air and filling == true then
-						data[vi] = c_water
-					else filling = false end
-				end
-				filling = false
+		local top = vector.new(maxp.x, math.min(maxp.y, water_level), maxp.z) -- prevents flood fill from affecting any water above sea level
+		
+		for vi in area:iterp(minp, top) do
+			if data[vi] == c_water then
+				table.insert(waternodes, vi)
 			end
 		end
+		
+		while table.getn(waternodes) > 0 do
+			local vi = table.remove(waternodes)
+			local below = vi - area.ystride
+			local left = vi - area.zstride
+			local right = vi + area.zstride
+			local front = vi - 1
+			local back = vi + 1
+			
+			fill_to(below, data, area)
+			fill_to(left, data, area)
+			fill_to(right, data, area)
+			fill_to(front, data, area)
+			fill_to(back, data, area)
+		end
+		
 		vm:set_data(data)
 		vm:write_to_map()
 		vm:update_liquids()

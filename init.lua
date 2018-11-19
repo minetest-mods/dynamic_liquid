@@ -47,43 +47,97 @@ local set_node = minetest.set_node
 -- Dynamic liquids
 -----------------------------------------------------------------------------------------------------------------------
 
-dynamic_liquid.liquid_abm = function(liquid, flowing_liquid, chance)
-	minetest.register_abm({
-		label = "dynamic_liquid " .. liquid .. " and " .. flowing_liquid,
-		nodenames = {liquid},
-		neighbors = {flowing_liquid},
-		interval = 1,
-		chance = chance or 1,
-		catch_up = false,
-		action = function(pos,node) -- Do everything possible to optimize this method
-			local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
-			local check_node = get_node(check_pos)
-			local check_node_name = check_node.name
-			if check_node_name == flowing_liquid or check_node_name == "air" then
-				set_node(pos, check_node)
-				set_node(check_pos, node)
-				return
-			end
-			local perm = all_direction_permutations[math.random(24)]
-			local dirs -- declare outside of loop so it won't keep entering/exiting scope
-			for i=1,4 do
-				dirs = perm[i]
-				-- reuse check_pos to avoid allocating a new table
-				check_pos.x = pos.x + dirs.x 
-				check_pos.y = pos.y
-				check_pos.z = pos.z + dirs.z
-				check_node = get_node(check_pos)
-				check_node_name = check_node.name
+local disable_flow_above = tonumber(minetest.setting_get("dynamic_liquid_disable_flow_above"))
+
+if disable_flow_above == nil or disable_flow_above >= 31000 then
+
+-- version without altitude check
+	dynamic_liquid.liquid_abm = function(liquid, flowing_liquid, chance)
+		minetest.register_abm({
+			label = "dynamic_liquid " .. liquid .. " and " .. flowing_liquid,
+			nodenames = {liquid},
+			neighbors = {flowing_liquid},
+			interval = 1,
+			chance = chance or 1,
+			catch_up = false,
+			action = function(pos,node) -- Do everything possible to optimize this method
+				local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
+				local check_node = get_node(check_pos)
+				local check_node_name = check_node.name
 				if check_node_name == flowing_liquid or check_node_name == "air" then
 					set_node(pos, check_node)
 					set_node(check_pos, node)
 					return
 				end
+				local perm = all_direction_permutations[math.random(24)]
+				local dirs -- declare outside of loop so it won't keep entering/exiting scope
+				for i=1,4 do
+					dirs = perm[i]
+					-- reuse check_pos to avoid allocating a new table
+					check_pos.x = pos.x + dirs.x 
+					check_pos.y = pos.y
+					check_pos.z = pos.z + dirs.z
+					check_node = get_node(check_pos)
+					check_node_name = check_node.name
+					if check_node_name == flowing_liquid or check_node_name == "air" then
+						set_node(pos, check_node)
+						set_node(check_pos, node)
+						return
+					end
+				end
 			end
-		end
-	})	
-	dynamic_liquid.registered_liquids[liquid] = flowing_liquid
-	table.insert(dynamic_liquid.registered_liquid_neighbors, liquid)
+		})	
+		dynamic_liquid.registered_liquids[liquid] = flowing_liquid
+		table.insert(dynamic_liquid.registered_liquid_neighbors, liquid)
+	end
+
+else
+-- version with altitude check
+	dynamic_liquid.liquid_abm = function(liquid, flowing_liquid, chance)
+		minetest.register_abm({
+			label = "dynamic_liquid " .. liquid .. " and " .. flowing_liquid .. " with altitude check",
+			nodenames = {liquid},
+			neighbors = {flowing_liquid},
+			interval = 1,
+			chance = chance or 1,
+			catch_up = false,
+			action = function(pos,node) -- Do everything possible to optimize this method
+				-- This altitude check is the only difference from the version above.
+				-- If the altitude check is disabled we don't ever need to make the comparison,
+				-- hence the two different versions.
+				if pos.y > disable_flow_above then
+					return
+				end
+				local check_pos = {x=pos.x, y=pos.y-1, z=pos.z}
+				local check_node = get_node(check_pos)
+				local check_node_name = check_node.name
+				if check_node_name == flowing_liquid or check_node_name == "air" then
+					set_node(pos, check_node)
+					set_node(check_pos, node)
+					return
+				end
+				local perm = all_direction_permutations[math.random(24)]
+				local dirs -- declare outside of loop so it won't keep entering/exiting scope
+				for i=1,4 do
+					dirs = perm[i]
+					-- reuse check_pos to avoid allocating a new table
+					check_pos.x = pos.x + dirs.x 
+					check_pos.y = pos.y
+					check_pos.z = pos.z + dirs.z
+					check_node = get_node(check_pos)
+					check_node_name = check_node.name
+					if check_node_name == flowing_liquid or check_node_name == "air" then
+						set_node(pos, check_node)
+						set_node(check_pos, node)
+						return
+					end
+				end
+			end
+		})	
+		dynamic_liquid.registered_liquids[liquid] = flowing_liquid
+		table.insert(dynamic_liquid.registered_liquid_neighbors, liquid)
+	end
+
 end
 
 if not minetest.get_modpath("default") then

@@ -10,6 +10,11 @@ dynamic_liquid_river_water (Dynamic river water) bool false
 #Causes lava blocks to move dynamically
 dynamic_liquid_lava (Dynamic lava) bool true
 
+#Floatlands are "leaky", so if you wish to prevent their lakes from draining
+#set this value to somewhere below the elevation the floatlands are generated
+#at.
+dynamic_liquid_disable_flow_above (Disable flow above this altitude) int 31000
+
 #Causes natural clay deposits to act as water sources, seeping new water blocks
 #into the space above them.
 #Also adds a "spring" block to the creative inventory to serve as an infinite water

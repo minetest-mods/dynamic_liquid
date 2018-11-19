@@ -363,7 +363,7 @@ if mapgen_prefill then
 	waternodes = {}
 
 	local fill_to = function (vi, data, area)
-		if area:containsi(vi) then
+		if area:containsi(vi) and area:position(vi).y <= water_level then
 			if data[vi] == c_air then
 				data[vi] = c_water
 				table.insert(waternodes, vi)
@@ -372,7 +372,7 @@ if mapgen_prefill then
 	end
 	
 	minetest.register_on_generated(function(minp, maxp, seed)
-		if minp.y >= water_level or maxp.y < -70 then
+		if minp.y > water_level or maxp.y < -70 then
 			return
 		end
 	

@@ -255,7 +255,7 @@ if flow_through then
 	local add_flow_through = function(node_name)
 		local node_def = minetest.registered_nodes[node_name]
 		if node_def == nil then
-			minetest.log("error", "dynamic_liquid attempted to call add_flow_through on the node name "
+			minetest.log("warning", "dynamic_liquid attempted to call add_flow_through on the node name "
 				.. node_name .. ", which was not found in minetest.registered_nodes.")
 			return
 		end

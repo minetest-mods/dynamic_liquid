@@ -49,6 +49,11 @@ dynamic_liquid_new_lava_cooling (Revised lava cooling) bool true
 #behave the same - this occurs only when it's first created.
 dynamic_liquid_falling_obsidian (Falling obsidian) bool false
 
+#When true, placing a block where a registered liquid source currently is
+#will make a simple attempt to displace the liquid source somewhere else
+#rather than destroying it.
+dynamic_liquid_displace_liquid (Displace liquid) bool true
+
 [Flow Rates]
 
 #Sets the probability of water flow per block per second.

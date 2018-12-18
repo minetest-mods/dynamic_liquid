@@ -42,7 +42,7 @@ local all_direction_permutations = {
 }
 
 local get_node = minetest.get_node
-local set_node = minetest.set_node
+local set_node = minetest.swap_node
 
 -- Dynamic liquids
 -----------------------------------------------------------------------------------------------------------------------
@@ -461,4 +461,34 @@ if mapgen_prefill then
 		vm:write_to_map()
 		vm:update_liquids()
 	end)
+end
+
+local displace_liquid = minetest.setting_getbool("dynamic_liquid_displace_liquid")
+displace_liquid = displace_liquid or displace_liquid == nil -- default true
+if displace_liquid then
+
+	-- Conserve liquids, when placing nodes in liquids try to find a place to displace the liquid to.
+	-- This isn't perfect, but is fast and covers most situations well enough.
+	minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack, pointed_thing)
+		local flowing = dynamic_liquid.registered_liquids[oldnode.name]
+		if flowing ~= nil then
+			-- first search a column directly above the liquid node to find a place to displace the liquid to
+			local air_column = minetest.find_nodes_in_area(pos, {x=pos.x, y=pos.y+64, z=pos.z}, {"air", flowing})
+			local lowest_air = air_column[1] -- order of returned nodes is lowest first
+			if lowest_air then
+				local liquid_column = minetest.find_nodes_in_area(pos, lowest_air, {oldnode.name}) -- check if there's an unbroken column of liquid
+				if table.getn(liquid_column) == lowest_air.y - pos.y - 1 then
+					minetest.swap_node(lowest_air, oldnode)
+					return false
+				end
+			end
+			-- failing that, look for an adjacent node
+			local nearest_air = minetest.find_node_near(pos, 1, {"air", flowing})
+			if nearest_air then
+				minetest.swap_node(nearest_air, oldnode)
+				return false
+			end
+		end
+	end)
+
 end

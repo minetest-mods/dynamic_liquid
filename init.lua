@@ -467,26 +467,57 @@ local displace_liquid = minetest.setting_getbool("dynamic_liquid_displace_liquid
 displace_liquid = displace_liquid or displace_liquid == nil -- default true
 if displace_liquid then
 
+
+	local cardinal_dirs = {
+		{x= 0, y=0,  z= 1},
+		{x= 1, y=0,  z= 0},
+		{x= 0, y=0,  z=-1},
+		{x=-1, y=0,  z= 0},
+		{x= 0, y=-1, z= 0},
+		{x= 0, y=1,  z= 0},
+	}
+	-- breadth-first search passing through liquid searching for air or flowing liquid.
+	local flood_search_outlet = function(start_pos, source, flowing)
+		local start_node =  minetest.get_node(start_pos)
+		local start_node_name = start_node.name
+		if start_node_name == "air" or start_node_name == flowing then
+			return start_pos
+		end
+	
+		local visited = {}
+		visited[minetest.hash_node_position(start_pos)] = true
+		local queue = {start_pos}
+		local queue_pointer = 1
+		
+		while #queue >= queue_pointer do
+			local current_pos = queue[queue_pointer]		
+			queue_pointer = queue_pointer + 1
+			for _, cardinal_dir in ipairs(cardinal_dirs) do
+				local new_pos = vector.add(current_pos, cardinal_dir)
+				local new_hash = minetest.hash_node_position(new_pos)
+				if visited[new_hash] == nil then
+					local new_node = minetest.get_node(new_pos)
+					local new_node_name = new_node.name
+					if new_node_name == "air" or new_node_name == flowing then
+						return new_pos
+					end
+					visited[new_hash] = true
+					if new_node_name == source then
+						table.insert(queue, new_pos)
+					end
+				end
+			end		
+		end
+		return nil
+	end
+
 	-- Conserve liquids, when placing nodes in liquids try to find a place to displace the liquid to.
-	-- This isn't perfect, but is fast and covers most situations well enough.
 	minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack, pointed_thing)
 		local flowing = dynamic_liquid.registered_liquids[oldnode.name]
 		if flowing ~= nil then
-			-- first search a column directly above the liquid node to find a place to displace the liquid to
-			local air_column = minetest.find_nodes_in_area(pos, {x=pos.x, y=pos.y+64, z=pos.z}, {"air", flowing})
-			local lowest_air = air_column[1] -- order of returned nodes is lowest first
-			if lowest_air then
-				local liquid_column = minetest.find_nodes_in_area(pos, lowest_air, {oldnode.name}) -- check if there's an unbroken column of liquid
-				if table.getn(liquid_column) == lowest_air.y - pos.y - 1 then
-					minetest.swap_node(lowest_air, oldnode)
-					return false
-				end
-			end
-			-- failing that, look for an adjacent node
-			local nearest_air = minetest.find_node_near(pos, 1, {"air", flowing})
-			if nearest_air then
-				minetest.swap_node(nearest_air, oldnode)
-				return false
+			local dest = flood_search_outlet(pos, oldnode.name, flowing)
+			if dest ~= nil then
+				minetest.swap_node(dest, oldnode)
 			end
 		end
 	end)

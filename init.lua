@@ -47,7 +47,7 @@ local set_node = minetest.swap_node
 -- Dynamic liquids
 -----------------------------------------------------------------------------------------------------------------------
 
-local disable_flow_above = tonumber(minetest.setting_get("dynamic_liquid_disable_flow_above"))
+local disable_flow_above = tonumber(minetest.settings:get("dynamic_liquid_disable_flow_above"))
 
 if disable_flow_above == nil or disable_flow_above >= 31000 then
 
@@ -144,31 +144,26 @@ if not minetest.get_modpath("default") then
 	return
 end
 
-local water = minetest.setting_getbool("dynamic_liquid_water")
-water = water or water == nil -- default true
+local water = minetest.settings:get_bool("dynamic_liquid_water", true)
+local river_water = minetest.settings:get_bool("dynamic_liquid_river_water", false)
+local lava = minetest.settings:get_bool("dynamic_liquid_lava", true)
 
-local river_water = minetest.setting_getbool("dynamic_liquid_river_water") -- default false
-
-local lava = minetest.setting_getbool("dynamic_liquid_lava")
-lava = lava or lava == nil -- default true
-
-local water_probability = tonumber(minetest.setting_get("dynamic_liquid_water_flow_propability"))
+local water_probability = tonumber(minetest.settings:get("dynamic_liquid_water_flow_propability"))
 if water_probability == nil then
 	water_probability = 1
 end
 
-local river_water_probability = tonumber(minetest.setting_get("dynamic_liquid_river_water_flow_propability"))
+local river_water_probability = tonumber(minetest.settings:get("dynamic_liquid_river_water_flow_propability"))
 if river_water_probability == nil then
 	river_water_probability = 1
 end
 
-local lava_probability = tonumber(minetest.setting_get("dynamic_liquid_lava_flow_propability"))
+local lava_probability = tonumber(minetest.settings:get("dynamic_liquid_lava_flow_propability"))
 if lava_probability == nil then
 	lava_probability = 5
 end
 
-local springs = minetest.setting_getbool("dynamic_liquid_springs")
-springs = springs or springs == nil -- default true
+local springs = minetest.settings:get_bool("dynamic_liquid_springs", true)
 
 if water then
 	-- override water_source and water_flowing with liquid_renewable set to false
@@ -190,8 +185,7 @@ end
 -- Flow-through nodes
 -----------------------------------------------------------------------------------------------------------------------
 
-local flow_through = minetest.setting_getbool("dynamic_liquid_flow_through")
-flow_through = flow_through or flow_through == nil -- default true
+local flow_through = minetest.settings:get_bool("dynamic_liquid_flow_through", true)
 
 if flow_through then
 
@@ -300,14 +294,21 @@ end
 
 -- Springs
 -----------------------------------------------------------------------------------------------------------------------
+local function deep_copy(table_in)
+	local table_out = {}
+	for index, value in pairs(table_in) do
+		if type(value) == "table" then
+			table_out[index] = deep_copy(value)
+		else
+			table_out[index] = value
+		end
+	end
+	return table_out
+end
 
 local duplicate_def = function (name)
 	local old_def = minetest.registered_nodes[name]
-	local new_def = {}
-	for param, value in pairs(old_def) do
-		new_def[param] = value
-	end
-	return new_def
+	return deep_copy(old_def)
 end
 
 -- register damp clay whether we're going to set the ABM or not, if the user disables this feature we don't want existing
@@ -406,8 +407,7 @@ if springs then
 	})	
 end
 
-local mapgen_prefill = minetest.setting_getbool("dynamic_liquid_mapgen_prefill")
-mapgen_prefill = mapgen_prefill or mapgen_prefill == nil -- default true
+local mapgen_prefill = minetest.settings:get_bool("dynamic_liquid_mapgen_prefill", true)
 
 local waternodes
 
@@ -424,37 +424,81 @@ if mapgen_prefill then
 			end
 		end
 	end
+
+--	local count = 0
+	local drop_liquid = function(vi, data, area, min_y)
+		if data[vi] ~= c_water then
+			-- we only care about water.
+			return
+		end
+		local start = vi -- remember the water node we started from
+		local ystride = area.ystride
+		vi = vi - ystride
+		if data[vi] ~= c_air then
+			-- if there's no air below this water node, give up immediately.
+			return
+		end
+		vi = vi - ystride -- There's air below the water, so move down one.
+		while data[vi] == c_air and area:position(vi).y > min_y do
+			-- the min_y check is here to ensure that we don't put water into the mapgen
+			-- border zone below our current map chunk where it might get erased by future mapgen activity.
+			-- if there's more air, keep going.
+			vi = vi - ystride
+		end
+		vi = vi + ystride -- Move back up one. vi is now pointing at the last air node above the first non-air node.
+		data[vi] = c_water
+		data[start] = c_air
+--		count = count + 1
+--		if count % 100 == 0 then
+--			minetest.chat_send_all("dropped water " .. (start-vi)/ystride .. " at " .. minetest.pos_to_string(area:position(vi)))
+--		end
+	end
 	
 	minetest.register_on_generated(function(minp, maxp, seed)
-		if minp.y > water_level or maxp.y < -70 then
+		if minp.y > water_level then
+			-- we're in the sky.
 			return
 		end
 	
 		local vm, emin, emax = minetest.get_mapgen_object("voxelmanip")
 		local area = VoxelArea:new{MinEdge=emin, MaxEdge=emax}
 		vm:get_data(data)
+		local maxp_y = maxp.y
+		local minp_y = minp.y
 		
-		local top = vector.new(maxp.x, math.min(maxp.y, water_level), maxp.z) -- prevents flood fill from affecting any water above sea level
-		
-		for vi in area:iterp(minp, top) do
-			if data[vi] == c_water then
-				table.insert(waternodes, vi)
+		if maxp_y > -70 then
+			local top = vector.new(maxp.x, math.min(maxp_y, water_level), maxp.z) -- prevents flood fill from affecting any water above sea level
+			for vi in area:iterp(minp, top) do
+				if data[vi] == c_water then
+					table.insert(waternodes, vi)
+				end
 			end
-		end
-		
-		while table.getn(waternodes) > 0 do
-			local vi = table.remove(waternodes)
-			local below = vi - area.ystride
-			local left = vi - area.zstride
-			local right = vi + area.zstride
-			local front = vi - 1
-			local back = vi + 1
 			
-			fill_to(below, data, area)
-			fill_to(left, data, area)
-			fill_to(right, data, area)
-			fill_to(front, data, area)
-			fill_to(back, data, area)
+			while table.getn(waternodes) > 0 do
+				local vi = table.remove(waternodes)
+				local below = vi - area.ystride
+				local left = vi - area.zstride
+				local right = vi + area.zstride
+				local front = vi - 1
+				local back = vi + 1
+				
+				fill_to(below, data, area)
+				fill_to(left, data, area)
+				fill_to(right, data, area)
+				fill_to(front, data, area)
+				fill_to(back, data, area)
+			end
+		else
+			-- Caves sometimes generate with liquid nodes hovering in mid air.
+			-- This immediately drops them straight down as far as they can go, reducing the ABM thrashing.
+			-- We only iterate down to minp.y+1 because anything at minp.y will never be dropped farther anyway.
+			for vi in area:iter(minp.x, minp_y+1, minp.z, maxp.x, maxp_y, maxp.z) do
+				-- fortunately, area:iter iterates through y columns going upward. Just what we need!
+				-- We could possibly be a bit more efficient by remembering how far we dropped then
+				-- last liquid node in a column and moving stuff down that far,
+				-- but for now let's keep it simple.
+				drop_liquid(vi, data, area, minp_y)
+			end
 		end
 		
 		vm:set_data(data)
@@ -463,10 +507,8 @@ if mapgen_prefill then
 	end)
 end
 
-local displace_liquid = minetest.setting_getbool("dynamic_liquid_displace_liquid")
-displace_liquid = displace_liquid or displace_liquid == nil -- default true
+local displace_liquid = minetest.settings:get_bool("dynamic_liquid_displace_liquid", true)
 if displace_liquid then
-
 
 	local cardinal_dirs = {
 		{x= 0, y=0,  z= 1},

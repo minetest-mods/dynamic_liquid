@@ -1,11 +1,9 @@
 if not minetest.get_modpath("default") then return end
 
-local new_lava_cooling = minetest.setting_getbool("dynamic_liquid_new_lava_cooling")
-new_lava_cooling = new_lava_cooling or new_lava_cooling == nil -- default true
-
+local new_lava_cooling = minetest.settings:get_bool("dynamic_liquid_new_lava_cooling", true)
 if not new_lava_cooling then return end
 
-local falling_obsidian = minetest.setting_getbool("dynamic_liquid_falling_obsidian")
+local falling_obsidian = minetest.settings:get_bool("dynamic_liquid_falling_obsidian", false)
 
 -- The existing cool_lava ABM is hard-coded to respond to water nodes
 -- and overriding node groups doesn't appear to work:
@@ -21,8 +19,7 @@ local falling_obsidian = minetest.setting_getbool("dynamic_liquid_falling_obsidi
 -- "dynamic_lava_flowing_destroys" and/or "dynamic_lava_source_destroys"
 -- to nodes that should be destroyed by proximity to lava.
 
-local particles = minetest.setting_getbool("enable_particles")
-particles = particles or particles == nil -- default true
+local particles = minetest.settings:get_bool("enable_particles", true)
 
 local steam = function(pos)
 	if particles then

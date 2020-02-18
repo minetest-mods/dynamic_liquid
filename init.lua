@@ -5,11 +5,11 @@ dynamic_liquid.registered_liquid_neighbors = {}
 
 local water_level = tonumber(minetest.get_mapgen_setting("water_level"))
 
--- internationalization boilerplate
-local MP = minetest.get_modpath(minetest.get_current_modname())
-local S, NS = dofile(MP.."/intllib.lua")
+local modname = minetest.get_current_modname()
+local modpath = minetest.get_modpath(modname)
+local S = minetest.get_translator(modname)
 
-dofile(MP.."/cooling_lava.lua")
+dofile(modpath.."/cooling_lava.lua")
 
 -- By making this giant table of all possible permutations of horizontal direction we can avoid
 -- lots of redundant calculations.

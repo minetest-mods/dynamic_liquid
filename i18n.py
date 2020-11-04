@@ -13,19 +13,22 @@
 from __future__ import print_function
 import os, fnmatch, re, shutil, errno
 from sys import argv as _argv
+from sys import stderr as _stderr
 
 # Running params
 params = {"recursive": False,
     "help": False,
     "mods": False,
     "verbose": False,
-    "folders": []
+    "folders": [],
+    "no-old-file": False
 }
 # Available CLI options
 options = {"recursive": ['--recursive', '-r'],
     "help": ['--help', '-h'],
     "mods": ['--installed-mods'],
-    "verbose": ['--verbose', '-v']
+    "verbose": ['--verbose', '-v'],
+    "no-old-file": ['--no-old-file']
 }
 
 # Strings longer than this will have extra space added between
@@ -64,6 +67,8 @@ DESCRIPTION
         run on all subfolders of paths given
     {', '.join(options["mods"])}
         run on locally installed modules
+    {', '.join(options["no-old-file"])}
+        do not create *.old files
     {', '.join(options["verbose"])}
         add output information
 ''')
@@ -108,13 +113,15 @@ def main():
 
 #group 2 will be the string, groups 1 and 3 will be the delimiters (" or ')
 #See https://stackoverflow.com/questions/46967465/regex-match-text-in-either-single-or-double-quote
-pattern_lua = re.compile(r'[\.=^\t,{\(\s]N?S\(\s*(["\'])((?:\\\1|(?:(?!\1)).)*)(\1)[\s,\)]', re.DOTALL)
-pattern_lua_bracketed = re.compile(r'[\.=^\t,{\(\s]N?S\(\s*\[\[(.*?)\]\][\s,\)]', re.DOTALL)
+pattern_lua_s = re.compile(r'[\.=^\t,{\(\s]N?S\(\s*(["\'])((?:\\\1|(?:(?!\1)).)*)(\1)[\s,\)]', re.DOTALL)
+pattern_lua_fs = re.compile(r'[\.=^\t,{\(\s]N?FS\(\s*(["\'])((?:\\\1|(?:(?!\1)).)*)(\1)[\s,\)]', re.DOTALL)
+pattern_lua_bracketed_s = re.compile(r'[\.=^\t,{\(\s]N?S\(\s*\[\[(.*?)\]\][\s,\)]', re.DOTALL)
+pattern_lua_bracketed_fs = re.compile(r'[\.=^\t,{\(\s]N?FS\(\s*\[\[(.*?)\]\][\s,\)]', re.DOTALL)
 
 # Handles "concatenation" .. " of strings"
 pattern_concat = re.compile(r'["\'][\s]*\.\.[\s]*["\']', re.DOTALL)
 
-pattern_tr = re.compile(r'(.+?[^@])=(.*)')
+pattern_tr = re.compile(r'(.*?[^@])=(.*)')
 pattern_name = re.compile(r'^name[ ]*=[ ]*([^ \n]*)')
 pattern_tr_filename = re.compile(r'\.tr$')
 pattern_po_language_code = re.compile(r'(.*)\.po$')
@@ -205,8 +212,10 @@ def mkdir_p(path):
 # dKeyStrings is a dictionary of localized string to source file sets
 # dOld is a dictionary of existing translations and comments from
 # the previous version of this text
-def strings_to_text(dkeyStrings, dOld, mod_name):
+def strings_to_text(dkeyStrings, dOld, mod_name, header_comments):
     lOut = [f"# textdomain: {mod_name}\n"]
+    if header_comments is not None:
+        lOut.append(header_comments)
     
     dGroupedBySource = {}
 
@@ -266,7 +275,7 @@ def write_template(templ_file, dkeyStrings, mod_name):
     # read existing template file to preserve comments
     existing_template = import_tr_file(templ_file)
     
-    text = strings_to_text(dkeyStrings, existing_template[0], mod_name)
+    text = strings_to_text(dkeyStrings, existing_template[0], mod_name, existing_template[2])
     mkdir_p(os.path.dirname(templ_file))
     with open(templ_file, "wt", encoding='utf-8') as template_file:
         template_file.write(text)
@@ -282,9 +291,13 @@ def read_lua_file_strings(lua_file):
         text = re.sub(pattern_concat, "", text)
 
         strings = []
-        for s in pattern_lua.findall(text):
+        for s in pattern_lua_s.findall(text):
             strings.append(s[1])
-        for s in pattern_lua_bracketed.findall(text):
+        for s in pattern_lua_bracketed_s.findall(text):
+            strings.append(s)
+        for s in pattern_lua_fs.findall(text):
+            strings.append(s[1])
+        for s in pattern_lua_bracketed_fs.findall(text):
             strings.append(s)
                 
         for s in strings:
@@ -302,9 +315,11 @@ def read_lua_file_strings(lua_file):
 # returns both a dictionary of translations
 # and the full original source text so that the new text
 # can be compared to it for changes.
+# Returns also header comments in the third return value.
 def import_tr_file(tr_file):
     dOut = {}
     text = None
+    header_comment = None
     if os.path.exists(tr_file):
         with open(tr_file, "r", encoding='utf-8') as existing_file :
             # save the full text to allow for comparison
@@ -318,6 +333,16 @@ def import_tr_file(tr_file):
             for line in existing_file.readlines():
                 line = line.rstrip('\n')
                 if line[:3] == "###":
+                    if header_comment is None:
+                        # Save header comments
+                        header_comment = latest_comment_block
+                        # Stip textdomain line
+                        tmp_h_c = ""
+                        for l in header_comment.split('\n'):
+                            if not l.startswith("# textdomain:"):
+                                tmp_h_c += l + '\n'
+                        header_comment = tmp_h_c
+
                     # Reset comment block if we hit a header
                     latest_comment_block = None
                     continue
@@ -338,7 +363,7 @@ def import_tr_file(tr_file):
                         outval["comment"] = latest_comment_block
                     latest_comment_block = None
                     dOut[match.group(1)] = outval
-    return (dOut, text)
+    return (dOut, text, header_comment)
 
 # Walks all lua files in the mod folder, collects translatable strings,
 # and writes it to a template.txt file
@@ -377,11 +402,12 @@ def update_tr_file(dNew, mod_name, tr_file):
     dOld = tr_import[0]
     textOld = tr_import[1]
 
-    textNew = strings_to_text(dNew, dOld, mod_name)
+    textNew = strings_to_text(dNew, dOld, mod_name, tr_import[2])
 
     if textOld and textOld != textNew:
         print(f"{tr_file} has changed.")
-        shutil.copyfile(tr_file, f"{tr_file}.old")
+        if not params["no-old-file"]:
+            shutil.copyfile(tr_file, f"{tr_file}.old")
 
     with open(tr_file, "w", encoding='utf-8') as new_tr_file:
         new_tr_file.write(textNew)
@@ -399,7 +425,8 @@ def update_mod(folder):
             for tr_file in get_existing_tr_files(folder):
                 update_tr_file(data, modname, os.path.join(folder, "locale/", tr_file))
     else:
-        print("Unable to find modname in folder " + folder)
+        print(f"\033[31mUnable to find modname in folder {folder}.\033[0m", file=_stderr)
+        exit(1)
 
 # Determines if the folder being pointed to is a mod or a mod pack
 # and then runs update_mod accordingly

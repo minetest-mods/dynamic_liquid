@@ -1,12 +1,15 @@
 # textdomain: dynamic_liquid
 
 
+
 ### init.lua ###
 
-A natural spring that generates an endless stream of water source blocks=
+#WARNING: AUTOTRANSLATED BY GOOGLE TRANSLATE
+A natural spring that generates an endless stream of water source blocks=Une source naturelle qui génère un flux sans fin de blocs de source d'eau
 
 Damp Clay=Argile humide
 
-Generates one source block of water directly on top of itself once per second, provided the space is clear. If this natural spring is dug out the flow stops and it is turned into ordinary cobble.=
+#WARNING: AUTOTRANSLATED BY GOOGLE TRANSLATE
+Generates one source block of water directly on top of itself once per second, provided the space is clear. If this natural spring is dug out the flow stops and it is turned into ordinary cobble.=Génère un bloc source d'eau directement sur lui-même une fois par seconde, à condition que l'espace soit dégagé. Si cette source naturelle est creusée, le débit s'arrête et il se transforme en galets ordinaires.
 
 Spring=Source

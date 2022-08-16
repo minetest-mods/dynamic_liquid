@@ -102,28 +102,13 @@ if springs then
 		vm:write_to_map()
 	end)
 	
-	minetest.register_abm({
-		label = "dynamic_liquid damp clay spring",
+	dynamic_liquid.spring({
 		nodenames = {"dynamic_liquid:clay"},
-		neighbors = {"air", "default:water_source", "default:water_flowing"},
-		interval = 1,
-		chance = 1,
-		catch_up = false,
-		action = function(pos,node)
-			local check_node
-			local check_node_name
-			while pos.y < water_level do
-				pos.y = pos.y + 1
-				check_node = get_node(pos)
-				check_node_name = check_node.name
-				if check_node_name == "air" or check_node_name == "default:water_flowing" then
-					set_node(pos, {name="default:water_source"})
-				elseif check_node_name ~= "default:water_source" then
-					--Something's been put on top of this clay, don't send water through it
-					break
-				end
-			end
-		end
+		water_source = "default:water_source",
+		water_flowing = "default:water_flowing",
+		y_max = water_level,
+		y_min = -15,
+		pressure = 15,
 	})
 	
 	local spring_sounds = nil
@@ -148,22 +133,13 @@ if springs then
 		sounds = spring_sounds,
 	})
 	
-	minetest.register_abm({
-		label = "dynamic_liquid creative spring",
+	
+	dynamic_liquid.spring({
 		nodenames = {"dynamic_liquid:spring"},
-		neighbors = {"air", "default:water_flowing"},
-		interval = 1,
-		chance = 1,
-		catch_up = false,
-		action = function(pos,node)
-			pos.y = pos.y + 1
-			local check_node = get_node(pos)
-			local check_node_name = check_node.name
-			if check_node_name == "air" or check_node_name == "default:water_flowing" then
-				set_node(pos, {name="default:water_source"})
-			end
-		end
-	})	
+		water_source = "default:water_source",
+		water_flowing = "default:water_flowing",
+		pressure = 1,
+	})
 end
 
 

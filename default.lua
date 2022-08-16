@@ -1,37 +1,33 @@
 local S = minetest.get_translator(minetest.get_current_modname())
 
-local water = dynamic_liquid.config.water
-local river_water = dynamic_liquid.config.river_water
-local lava = dynamic_liquid.config.lava
 local water_probability = dynamic_liquid.config.water_probability
 local river_water_probability = dynamic_liquid.config.river_water_probability
 local lava_probability = dynamic_liquid.config.lava_probability
 local water_level = dynamic_liquid.config.water_level
 local springs = dynamic_liquid.config.springs
-local flow_through = dynamic_liquid.config.flow_through
-local mapgen_prefill = dynamic_liquid.config.mapgen_prefill
 
-if water then
+
+if dynamic_liquid.config.lava then
+	dynamic_liquid.liquid_abm("default:lava_source", "default:lava_flowing", lava_probability)
+end
+
+if dynamic_liquid.config.water then
 	-- override water_source and water_flowing with liquid_renewable set to false
 	local override_def = {liquid_renewable = false}
 	minetest.override_item("default:water_source", override_def)
 	minetest.override_item("default:water_flowing", override_def)
-end
 
-if lava then
-	dynamic_liquid.liquid_abm("default:lava_source", "default:lava_flowing", lava_probability)
-end
-if water then
 	dynamic_liquid.liquid_abm("default:water_source", "default:water_flowing", water_probability)
 end
-if river_water then	
+
+if dynamic_liquid.config.river_water then	
 	dynamic_liquid.liquid_abm("default:river_water_source", "default:river_water_flowing", river_water_probability)
 end
 
 -- Flow-through nodes
 -----------------------------------------------------------------------------------------------------------------------
 
-if flow_through then
+if dynamic_liquid.config.flow_through then
 
 	local flow_through_nodes = {"group:flow_through", "group:leaves", "group:sapling", "group:grass", "group:dry_grass", "group:flora", "groups:rail", "groups:flower",
 
@@ -51,7 +47,7 @@ if flow_through then
 	dynamic_liquid.flow_through_abm({nodenames = flow_through_nodes})
 end
 
-if mapgen_prefill then
+if dynamic_liquid.config.mapgen_prefill then
 	dynamic_liquid.mapgen_prefill({liquid="default:water_source", liquid_level=water_level})
 end
 
@@ -168,4 +164,30 @@ if springs then
 			end
 		end
 	})	
+end
+
+
+
+--------------------------------------------------------
+-- Cooling lava
+if dynamic_liquid.config.new_lava_cooling then
+	default.cool_lava = function(pos, node)
+		-- no-op disables default cooling ABM
+	end
+	
+	dynamic_liquid.cooling_lava({
+		flowing_destroys = {"default:water_flowing", "default:river_water_flowing", "default:snow", "default:snowblock"},
+		source_destroys = {	"default:water_source",
+			"default:river_water_source",
+			"default:water_flowing",
+			"default:river_water_flowing",
+			"default:ice",
+			"default:snow",
+			"default:snowblock",
+		},
+		lava_source = "default:lava_source",
+		lava_flowing = "default:lava_flowing",
+		obsidian = "default:obsidian",
+		cooling_sound = "default_cool_lava",
+	})
 end

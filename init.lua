@@ -15,8 +15,8 @@ dynamic_liquid.config.flow_through = minetest.settings:get_bool("dynamic_liquid_
 dynamic_liquid.config.mapgen_prefill = minetest.settings:get_bool("dynamic_liquid_mapgen_prefill", true)
 dynamic_liquid.config.disable_flow_above = tonumber(minetest.settings:get("dynamic_liquid_disable_flow_above")) -- this one can be nil
 dynamic_liquid.config.displace_liquid = minetest.settings:get_bool("dynamic_liquid_displace_liquid", true)
-
-
+dynamic_liquid.config.new_lava_cooling = minetest.settings:get_bool("dynamic_liquid_new_lava_cooling", true)
+dynamic_liquid.config.falling_obsidian = minetest.settings:get_bool("dynamic_liquid_falling_obsidian", false)
 
 dynamic_liquid.registered_liquids = {} -- used by the flow-through node abm
 dynamic_liquid.registered_liquid_neighbors = {}

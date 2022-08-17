@@ -7,9 +7,9 @@ local water_level = dynamic_liquid.config.water_level
 local springs = dynamic_liquid.config.springs
 
 
-if dynamic_liquid.config.lava then
-	dynamic_liquid.liquid_abm("mcl_core:lava_source", "mcl_core:lava_flowing", lava_probability)
-end
+--if dynamic_liquid.config.lava then
+--	dynamic_liquid.liquid_abm("mcl_core:lava_source", "mcl_core:lava_flowing", lava_probability)
+--end
 
 if dynamic_liquid.config.water then
 	-- override water_source and water_flowing with liquid_renewable set to false

@@ -3,6 +3,9 @@ local flow_through_directions = {
 	{{x=0,z=1},{x=1,z=0}},
 }
 
+local get_node = minetest.get_node
+local set_node = minetest.set_node
+
 dynamic_liquid.flow_through_abm = function(def)
 
 	minetest.register_abm({
@@ -20,7 +23,7 @@ dynamic_liquid.flow_through_abm = function(def)
 			local source_flowing_node = dynamic_liquid.registered_liquids[source_node.name]
 			local dest_flowing_node
 			if source_flowing_node ~= nil then
-				dest_node = minetest.get_node(dest_pos)
+				dest_node = get_node(dest_pos)
 				if dest_node.name == source_flowing_node or dest_node.name == "air" then
 					set_node(dest_pos, source_node)
 					set_node(source_pos, dest_node)

@@ -34,6 +34,9 @@ if dynamic_liquid.config.springs then
 		y_max = water_level,
 		y_min = -15,
 		pressure = 15,
-	})
-	
+	})	
+end
+
+if dynamic_liquid.config.mapgen_prefill then
+	dynamic_liquid.mapgen_prefill({liquid="mcl_core:water_source", liquid_level=water_level})
 end

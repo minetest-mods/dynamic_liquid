@@ -1,3 +1,5 @@
+local data = {}
+
 dynamic_liquid.mapgen_prefill = function(def)
 
 	local water_level = def.liquid_level

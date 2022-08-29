@@ -21,6 +21,26 @@ dynamic_liquid.config.falling_obsidian = minetest.settings:get_bool("dynamic_liq
 dynamic_liquid.registered_liquids = {} -- used by the flow-through node abm
 dynamic_liquid.registered_liquid_neighbors = {}
 
+dynamic_liquid.mapgen_data = {} -- shared by various mapgens
+
+
+local function deep_copy(table_in)
+	local table_out = {}
+	for index, value in pairs(table_in) do
+		if type(value) == "table" then
+			table_out[index] = deep_copy(value)
+		else
+			table_out[index] = value
+		end
+	end
+	return table_out
+end
+-- utility function used when making clay into springs
+dynamic_liquid.duplicate_def = function (name)
+	local old_def = minetest.registered_nodes[name]
+	return deep_copy(old_def)
+end
+
 local modpath = minetest.get_modpath(minetest.get_current_modname())
 
 dofile(modpath.."/cooling_lava.lua")

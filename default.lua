@@ -53,33 +53,18 @@ end
 
 -- Springs
 -----------------------------------------------------------------------------------------------------------------------
-local function deep_copy(table_in)
-	local table_out = {}
-	for index, value in pairs(table_in) do
-		if type(value) == "table" then
-			table_out[index] = deep_copy(value)
-		else
-			table_out[index] = value
-		end
-	end
-	return table_out
-end
 
-local duplicate_def = function (name)
-	local old_def = minetest.registered_nodes[name]
-	return deep_copy(old_def)
-end
 
 -- register damp clay whether we're going to set the ABM or not, if the user disables this feature we don't want existing
 -- spring clay to turn into unknown nodes.
-local clay_def = duplicate_def("default:clay")
+local clay_def = dynamic_liquid.duplicate_def("default:clay")
 clay_def.description = S("Damp Clay")
 if not springs then
 	clay_def.groups.not_in_creative_inventory = 1 -- take it out of creative inventory though
 end
 minetest.register_node("dynamic_liquid:clay", clay_def)
 
-local data = {}
+local data = dynamic_liquid.mapgen_data
 
 if springs then	
 	local c_clay = minetest.get_content_id("default:clay")

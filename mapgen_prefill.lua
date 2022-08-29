@@ -1,4 +1,4 @@
-local data = {}
+local data = dynamic_liquid.mapgen_data
 
 dynamic_liquid.mapgen_prefill = function(def)
 

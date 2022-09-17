@@ -1,9 +1,14 @@
-if not minetest.get_modpath("default") then return end
+dynamic_liquid.cooling_lava = function(def)
 
-local new_lava_cooling = minetest.settings:get_bool("dynamic_liquid_new_lava_cooling", true)
-if not new_lava_cooling then return end
+local lava_source = def.lava_source
+local lava_flowing = def.lava_flowing
+local obsidian = def.obsidian
+local flowing_destroys = def.flowing_destroys or {}
+local source_destroys = def.source_destroys or {}
+local cooling_sound = def.cooling_sound
 
-local falling_obsidian = minetest.settings:get_bool("dynamic_liquid_falling_obsidian", false)
+local falling_obsidian = dynamic_liquid.config.falling_obsidian
+
 
 -- The existing cool_lava ABM is hard-coded to respond to water nodes
 -- and overriding node groups doesn't appear to work:
@@ -20,7 +25,6 @@ local falling_obsidian = minetest.settings:get_bool("dynamic_liquid_falling_obsi
 -- to nodes that should be destroyed by proximity to lava.
 
 local particles = minetest.settings:get_bool("enable_particles", true)
-
 local steam = function(pos)
 	if particles then
 	minetest.add_particlespawner({
@@ -43,22 +47,19 @@ local steam = function(pos)
 	end
 end
 
-default.cool_lava = function(pos, node)
-	-- no-op disables default cooling ABM
-end
 
 -------------------------------------------------------------------------------------------------
+
 
 local dynamic_cools_lava_flowing = {"group:dynamic_cools_lava_flowing", "group:cools_lava"}
 
 -- Flowing lava will turn these blocks into steam.
 local dynamic_lava_flowing_destroys = {
 	"group:dynamic_lava_flowing_destroys",
-	"default:water_flowing",
-	"default:river_water_flowing",
-	"default:snow",
-	"default:snowblock"
 }
+for _, node_name in pairs(flowing_destroys) do
+	table.insert(dynamic_lava_flowing_destroys, node_name)
+end
 
 local all_flowing_nodes = {unpack(dynamic_cools_lava_flowing)}
 for i = 1, #dynamic_lava_flowing_destroys do
@@ -71,9 +72,9 @@ local cool_lava_flowing = function(pos, node)
 	if cooler_adjacent ~= nil then
 		-- pulling nearby sources into position is necessary to break certain classes of
 		-- flow "deadlock". Weird, but what're you gonna do.
-		local nearby_source = minetest.find_node_near(pos, 1, "default:lava_source")
+		local nearby_source = minetest.find_node_near(pos, 1, lava_source)
 		if nearby_source then
-			minetest.set_node(pos, {name="default:lava_source"})
+			minetest.set_node(pos, {name=lava_source})
 			minetest.set_node(nearby_source, {name="air"})
 			steam(nearby_source)
 		else
@@ -92,13 +93,13 @@ local cool_lava_flowing = function(pos, node)
 		steam(loc)
 	end	
 
-	minetest.sound_play("default_cool_lava",
+	minetest.sound_play(cooling_sound,
 		{pos = pos, max_hear_distance = 16, gain = 0.25})
 end
 
 minetest.register_abm({
 	label = "Lava flowing cooling",
-	nodenames = {"default:lava_flowing"},
+	nodenames = {lava_flowing},
 	neighbors = all_flowing_nodes,
 	interval = 1,
 	chance = 1,
@@ -122,14 +123,11 @@ end
 -- lava source blocks will turn these blocks into steam.
 local dynamic_lava_source_destroys = {
 	"group:dynamic_lava_source_destroys",
-	"default:water_source",
-	"default:river_water_source",
-	"default:water_flowing",
-	"default:river_water_flowing",
-	"default:ice",
-	"default:snow",
-	"default:snowblock"
 }
+for _, node_name in pairs(source_destroys) do
+	table.insert(dynamic_lava_source_destroys, node_name)
+end
+
 
 local all_source_nodes = {unpack(dynamic_cools_lava_source)}
 for i = 1, #dynamic_lava_source_destroys do
@@ -193,8 +191,8 @@ local cool_lava_source = function(pos, node)
 
 	if obsidian_location ~= nil then
 		minetest.set_node(pos, {name = "air"})
-		minetest.set_node(obsidian_location, {name = "default:obsidian"})
-		if minetest.spawn_falling_node and falling_obsidian then -- TODO cutting-edge dev function, so check if it exists for the time being. Remove check when 0.4.16 is released.
+		minetest.set_node(obsidian_location, {name = obsidian})
+		if falling_obsidian then
 			minetest.spawn_falling_node(obsidian_location)
 		end
 	elseif #evaporate_list > 0 then
@@ -202,18 +200,18 @@ local cool_lava_source = function(pos, node)
 		local loc = evaporate_list[math.random(1,#evaporate_list)]
 		if loc.y <= pos.y then
 			minetest.set_node(pos, {name = "air"})
-			minetest.set_node(loc, {name = "default:lava_source"})
+			minetest.set_node(loc, {name = lava_source})
 		end
 	end
 	
-	minetest.sound_play("default_cool_lava",
+	minetest.sound_play(cooling_sound,
 		{pos = pos, max_hear_distance = 16, gain = 0.25})
 end
 
 
 minetest.register_abm({
 	label = "Lava source cooling",
-	nodenames = {"default:lava_source"},
+	nodenames = {lava_source},
 	neighbors = all_source_nodes,
 	interval = 1,
 	chance = 1,
@@ -222,3 +220,6 @@ minetest.register_abm({
 		cool_lava_source(...)
 	end,
 })
+
+
+end

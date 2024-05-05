@@ -56,3 +56,7 @@ end
 if minetest.get_modpath("mcl_core") then
 	dofile(modpath.."/mineclone.lua")
 end
+
+if minetest.get_modpath("everness") then
+	dofile(modpath.."/everness.lua")
+end
